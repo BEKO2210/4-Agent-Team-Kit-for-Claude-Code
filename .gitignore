@@ -1,0 +1,6 @@
+# Runtime locks created by the scripts — never commit these
+.team/locks/*.lock
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
