@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Code · 4-Agent Team Console</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" />
+<style>
+  :root { --bg:#0b0e14; --panel:#11151f; --border:#1c2230; --fg:#e6e9ef; --muted:#8b94a7; --accent:#4f8cff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); height:100vh; display:flex; flex-direction:column;
+         font:14px/1.4 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif; }
+  header { display:flex; gap:8px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  header h1 { font-size:14px; margin:0; font-weight:600; white-space:nowrap; }
+  #goal { flex:1; min-width:220px; height:34px; max-height:90px; background:var(--panel); color:var(--fg);
+          border:1px solid var(--border); border-radius:6px; padding:7px 9px; resize:vertical; font:inherit; }
+  button { background:var(--panel); color:var(--fg); border:1px solid var(--border); border-radius:6px;
+           padding:6px 10px; cursor:pointer; font:inherit; }
+  button:hover { border-color:var(--accent); color:#fff; }
+  button.accent { background:rgba(79,140,255,.18); border-color:var(--accent); color:#cfe0ff; }
+  .spacer { flex:1; }
+  .conn { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#555; flex:none; }
+  .dot.on { background:#34d399; } .dot.off { background:#ef4444; }
+  #grid { flex:1; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:8px; padding:8px; min-height:0; }
+  .card { display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--border);
+          border-radius:8px; min-height:0; overflow:hidden; }
+  .card h2 { font-size:12px; margin:0; padding:6px 10px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); }
+  .term { flex:1; min-height:0; padding:4px 6px; }
+  .bar { display:flex; gap:5px; padding:6px; border-top:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+  .bar input.msg { flex:1; min-width:120px; background:var(--bg); color:var(--fg); border:1px solid var(--border);
+                   border-radius:6px; padding:6px; font:inherit; }
+  .keys button { padding:4px 7px; font-size:12px; }
+  @media (max-width:820px){ #grid { grid-template-columns:1fr; grid-template-rows:repeat(4,minmax(240px,1fr)); } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🤖 4-Agent Team Console</h1>
+    <textarea id="goal" placeholder="Goal for the LEAD — paste what the team should build/fix…"></textarea>
+    <button class="accent" id="kickoff" title="Send each agent its role prompt (Lead first)">▶ Kickoff all</button>
+    <button id="statusAll" title="Send 'status' to every agent">↻ status → all</button>
+    <span class="spacer"></span>
+    <span class="conn"><span id="conn" class="dot"></span><span id="connTxt">connecting…</span></span>
+  </header>
+  <div id="grid"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+  <script>
+    const terms = {};
+    let ws, cfg;
+
+    const send = (o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+    const input = (id, d) => send({ t: "i", id, d });
+    // bracketed paste keeps multi-line text from auto-submitting line by line
+    const paste = (id, text) => input(id, "\x1b[200~" + text + "\x1b[201~");
+    const flatten = (s) => (s || "").replace(/\s*\n\s*/g, " ").trim();
+
+    function sendPrompt(id) {
+      const a = cfg.agents.find((x) => x.id === id);
+      if (!a) return;
+      const goal = document.getElementById("goal").value || "<<< describe the goal >>>";
+      paste(id, flatten((a.prompt || "").replace("{{GOAL}}", goal)));
+      input(id, "\r");
+    }
+
+    function sendMsg(id) {
+      const m = document.getElementById("msg-" + id);
+      if (!m.value) return;
+      paste(id, m.value);
+      input(id, "\r");
+      m.value = "";
+    }
+
+    async function boot() {
+      cfg = await (await fetch("/agents")).json();
+      const grid = document.getElementById("grid");
+      for (const a of cfg.agents) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h2><span class="dot" id="dot-${a.id}"></span>${a.label}
+            <span class="spacer"></span>
+            <button data-act="start" data-id="${a.id}" title="restart this agent">restart</button>
+          </h2>
+          <div class="term" id="term-${a.id}"></div>
+          <div class="bar">
+            <input class="msg" id="msg-${a.id}" placeholder="message ${a.label} — Enter sends" />
+            <button data-act="sendmsg" data-id="${a.id}">Send</button>
+          </div>
+          <div class="bar keys">
+            <button class="accent" data-act="prompt" data-id="${a.id}" title="send this agent its role prompt">⮞ prompt</button>
+            <button data-act="enter"  data-id="${a.id}">⏎ Enter</button>
+            <button data-act="status" data-id="${a.id}">status</button>
+            <button data-act="y"      data-id="${a.id}">y</button>
+            <button data-act="esc"    data-id="${a.id}">Esc</button>
+            <button data-act="sigint" data-id="${a.id}">^C</button>
+          </div>`;
+        grid.appendChild(card);
+
+        const term = new Terminal({ fontSize: 12, cursorBlink: true, theme: { background: "#11151f" } });
+        const fit = new FitAddon.FitAddon();
+        term.loadAddon(fit);
+        term.open(document.getElementById("term-" + a.id));
+        try { fit.fit(); } catch {}
+        term.onData((d) => input(a.id, d)); // type directly into a panel, too
+        terms[a.id] = { term, fit };
+
+        document.getElementById("msg-" + a.id).addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); sendMsg(a.id); }
+        });
+      }
+
+      const doFit = () => {
+        for (const id in terms) {
+          try { terms[id].fit.fit(); } catch {}
+          const t = terms[id].term;
+          send({ t: "resize", id, cols: t.cols, rows: t.rows });
+        }
+      };
+      window.addEventListener("resize", () => { clearTimeout(window._rt); window._rt = setTimeout(doFit, 150); });
+      setTimeout(doFit, 350);
+
+      grid.addEventListener("click", (e) => {
+        const b = e.target.closest("button"); if (!b) return;
+        const { id, act } = b.dataset;
+        if (act === "enter") input(id, "\r");
+        else if (act === "status") input(id, "status\r");
+        else if (act === "y") input(id, "y\r");
+        else if (act === "esc") input(id, "\x1b");
+        else if (act === "sigint") input(id, "\x03");
+        else if (act === "start") send({ t: "start", id });
+        else if (act === "prompt") sendPrompt(id);
+        else if (act === "sendmsg") sendMsg(id);
+      });
+
+      document.getElementById("kickoff").addEventListener("click", () => {
+        cfg.agents.forEach((a, i) => setTimeout(() => sendPrompt(a.id), i * 700));
+      });
+      document.getElementById("statusAll").addEventListener("click", () => {
+        for (const a of cfg.agents) input(a.id, "status\r");
+      });
+
+      connect();
+    }
+
+    function connect() {
+      ws = new WebSocket((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host);
+      const dot = document.getElementById("conn"), txt = document.getElementById("connTxt");
+      ws.onopen = () => { dot.className = "dot on"; txt.textContent = "connected"; };
+      ws.onclose = () => { dot.className = "dot off"; txt.textContent = "reconnecting…"; setTimeout(connect, 1500); };
+      ws.onmessage = (ev) => {
+        const m = JSON.parse(ev.data);
+        if (m.t === "o" && terms[m.id]) terms[m.id].term.write(m.d);
+        else if (m.t === "started") { const d = document.getElementById("dot-" + m.id); if (d) d.className = "dot on"; }
+        else if (m.t === "exit") {
+          const d = document.getElementById("dot-" + m.id); if (d) d.className = "dot off";
+          if (terms[m.id]) terms[m.id].term.write("\r\n\x1b[31m[process exited]\x1b[0m\r\n");
+        }
+      };
+    }
+
+    boot();
+  </script>
+</body>
+</html>

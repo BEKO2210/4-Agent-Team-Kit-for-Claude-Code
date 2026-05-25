@@ -60,3 +60,17 @@ log every step · `status` = do the next thing, don't just report.
   Fewer than 4 areas? Merge roles. More? The model extends — just add a role file + a prompt.
 - **Gate:** `scripts/team-check.sh` is the contract for "green". Keep it fast.
 - **Push policy:** default is lead-only direct push to one branch; switch to PRs in `roles/lead.md`.
+
+## GUI — one window instead of 4 terminals (optional)
+Don't want to hop between terminals? `gui/` is a tiny local web console: it runs all four
+`claude` sessions, shows each in its own panel, and lets you chat + fire the common
+commands (Kickoff, `status`, Enter, `y`, Esc, ^C, restart) from buttons.
+```bash
+cd gui && npm install && cd ..
+node gui/server.js            # → http://localhost:4173
+```
+See `gui/README.md` for details.
+
+## License
+**Private use only** — see [`LICENSE`](LICENSE). Personal, non-commercial use is allowed;
+distribution or commercial use requires written permission.
