@@ -1,9 +1,9 @@
 # Board — single source of truth (owned by LEAD)
 
 The lead fills this from the human's goal and keeps it in sync with the logs.
-Status values: `todo` · `doing` · `blocked` · `done`.
+State values: `todo` · `doing` · `blocked` · `done`.
 
-| #  | Task                                   | Owner    | Status | Notes |
+| #  | Task                                   | Owner    | State | Notes |
 |----|----------------------------------------|----------|--------|-------|
 | 1  | _example: the lead splits the goal here_ | —        | todo   | —     |
 

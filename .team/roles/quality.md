@@ -15,7 +15,7 @@
 - 0 open critical issues; coverage not regressed;
 - then append `✅ quality sign-off — full gate green` for the lead.
 
-## On `status`
+## On `state`
 Run the gate, hunt gaps, add coverage, validate others' `DONE` items, keep main
 green. Use `team-exclusive.sh quality e2e -- <cmd>` so heavy runs don't collide.
 

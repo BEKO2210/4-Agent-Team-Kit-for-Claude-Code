@@ -75,7 +75,7 @@ function startAgent(def) {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
 const PUBLIC = path.join(ROOT, "public");
 
-// --- live team status, derived from the .team/ files (board + per-agent log mtimes) ---
+// --- live team state, derived from the .team/ files (board + per-agent log mtimes) ---
 const readFileSafe = (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return ""; } };
 const mtimeMs = (p) => { try { return fs.statSync(p).mtimeMs; } catch { return 0; } };
 
@@ -88,10 +88,10 @@ function teamStatus() {
     const c = line.split("|").map((s) => s.trim());
     const id = c[1];
     if (!/^\d+$/.test(id)) continue;
-    const status = (c[4] || "").toLowerCase();
+    const state = (c[4] || "").toLowerCase();
     counts.total++;
-    if (counts[status] !== undefined) counts[status]++;
-    tasks.push({ id, task: c[2] || "", owner: (c[3] || "").replace(/[@\s]/g, "").toLowerCase(), status });
+    if (counts[state] !== undefined) counts[state]++;
+    tasks.push({ id, task: c[2] || "", owner: (c[3] || "").replace(/[@\s]/g, "").toLowerCase(), state });
   }
   const now = Date.now();
   const ACTIVE = Number(process.env.TEAM_ACTIVE_SECS || 900);
@@ -107,9 +107,9 @@ function teamStatus() {
     const id = rf.replace(/\.md$/, "");
     const mt = mtimeMs(path.join(teamDir, "log", id + ".md"));
     const ageSec = mt ? Math.round((now - mt) / 1000) : -1;
-    let status = "no-log";
-    if (ageSec >= 0) status = ageSec < ACTIVE ? "active" : ageSec < STALE ? "idle" : "stale";
-    roles.push({ id, ageSec, status });
+    let state = "no-log";
+    if (ageSec >= 0) state = ageSec < ACTIVE ? "active" : ageSec < STALE ? "idle" : "stale";
+    roles.push({ id, ageSec, state });
   }
   return { generatedAt: new Date().toISOString(), counts, tasks, roles };
 }
@@ -120,7 +120,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ agents: config.agents, repoDir: REPO_DIR }));
   }
-  if (url === "/status") {
+  if (url === "/state") {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify(teamStatus()));
   }

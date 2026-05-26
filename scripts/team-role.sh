@@ -43,7 +43,7 @@ case "$cmd" in
       echo "## Definition of done"
       echo "- <how you prove an item is done; tests, gate green, etc.>"
       echo ""
-      echo "## On \`status\`"
+      echo "## On \`state\`"
       echo "Re-read board + logs → take your next unblocked row → implement → test →"
       echo "\`scripts/team-commit.sh $name \"…\" <paths>\` → log \`DONE #id — <proof>\`."
     } > "$rf"
@@ -57,7 +57,7 @@ through the .team/ folder. Read .team/PROTOCOL.md and .team/roles/$name.md, then
 them strictly. Work the board (.team/board.md): take your unblocked items, implement
 them in your owned paths only, run scripts/team-check.sh, commit via
 scripts/team-commit.sh $name "..." <paths>, and log every step in .team/log/$name.md.
-On any nudge ("status"), continue autonomously — pick up the next item, don't just report.
+On any nudge ("state"), continue autonomously — pick up the next item, don't just report.
 ----- end -----
 EOM
     team_log_event lead role-add "added $name"

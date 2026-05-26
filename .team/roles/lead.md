@@ -28,4 +28,4 @@ the work, and ship. **You alone push to the remote.**
 1. Read the human's goal. Split it into `board.md` rows; set owners + `todo`.
 2. Append to `log/lead.md`: `kickoff — <goal in one line>; @backend @frontend @quality see board`.
 3. Work your own items; sync the board from everyone's logs; integrate + push on green.
-4. On `status`: re-read all logs, update the board, unblock whoever is stuck, push ready work.
+4. On `state`: re-read all logs, update the board, unblock whoever is stuck, push ready work.

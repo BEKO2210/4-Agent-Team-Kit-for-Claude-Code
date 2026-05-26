@@ -144,7 +144,7 @@
     <div class="brand"><span class="b1">TEAM</span><span class="b2">//</span><span class="b1">CONSOLE</span><span class="caret"></span></div>
     <textarea id="goal" placeholder="Goal for the LEAD — paste what the team should build or fix…"></textarea>
     <button class="btn primary" id="kickoff" title="Send each agent its role prompt (Lead first), with the Goal injected">▶ Kickoff all</button>
-    <button class="btn" id="statusAll" title="Send 'status' to every agent">↻ status → all</button>
+    <button class="btn" id="statusAll" title="Send 'state' to every agent">↻ state → all</button>
     <span class="conn"><span id="conn" class="pulse"></span><span id="connTxt">connecting…</span></span>
   </header>
 
@@ -217,7 +217,7 @@
             <div class="keys">
               <button class="icon-btn send" data-act="prompt" data-id="${a.id}" title="send this agent its role prompt">⮞ prompt</button>
               <button class="icon-btn" data-act="enter"  data-id="${a.id}">⏎ Enter</button>
-              <button class="icon-btn" data-act="status" data-id="${a.id}">status</button>
+              <button class="icon-btn" data-act="state" data-id="${a.id}">state</button>
               <button class="icon-btn" data-act="y"      data-id="${a.id}">y</button>
               <button class="icon-btn" data-act="esc"    data-id="${a.id}">Esc</button>
               <button class="icon-btn" data-act="sigint" data-id="${a.id}">^C</button>
@@ -258,7 +258,7 @@
         const b = e.target.closest("button"); if (!b) return;
         const { id, act } = b.dataset;
         if (act === "enter") input(id, "\r");
-        else if (act === "status") input(id, "status\r");
+        else if (act === "state") input(id, "state\r");
         else if (act === "y") input(id, "y\r");
         else if (act === "esc") input(id, "\x1b");
         else if (act === "sigint") input(id, "\x03");
@@ -271,7 +271,7 @@
         cfg.agents.forEach((a, i) => setTimeout(() => sendPrompt(a.id), i * 700));
       });
       document.getElementById("statusAll").addEventListener("click", () => {
-        for (const a of cfg.agents) input(a.id, "status\r");
+        for (const a of cfg.agents) input(a.id, "state\r");
       });
 
       connect();
@@ -288,11 +288,11 @@
         ? `<b>${c.done || 0}/${total}</b> done · ${c.doing || 0} doing · ${c.blocked || 0} blocked · ${c.todo || 0} todo`
         : "board — no tasks yet";
       document.getElementById("avitals").innerHTML = (s.roles || []).map((r) =>
-        `<span class="vchip ${r.status}" style="--accent:${accentFor(r.id)}">
-           <span class="vdot"></span>${r.id}<em>${r.status}</em><small>${human(r.ageSec)}</small></span>`).join("");
+        `<span class="vchip ${r.state}" style="--accent:${accentFor(r.id)}">
+           <span class="vdot"></span>${r.id}<em>${r.state}</em><small>${human(r.ageSec)}</small></span>`).join("");
     }
     async function pollStatus() {
-      try { renderVitals(await (await fetch("/status")).json()); } catch { /* offline */ }
+      try { renderVitals(await (await fetch("/state")).json()); } catch { /* offline */ }
     }
 
     function connect() {

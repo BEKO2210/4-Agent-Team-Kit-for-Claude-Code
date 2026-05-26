@@ -11,6 +11,6 @@
 ## Definition of done
 - <how you prove an item is done; tests, gate green, etc.>
 
-## On `status`
+## On `state`
 Re-read board + logs → take your next unblocked row → implement → test →
 `scripts/team-commit.sh <name> "…" <paths>` → log `DONE #id — <proof>`.

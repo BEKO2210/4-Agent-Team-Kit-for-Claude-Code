@@ -18,8 +18,8 @@ The agents launch in the directory you run from (override with `REPO_DIR=/path/t
 2. Type your task into the **Goal** box (top).
 3. Click **▶ Kickoff all** — sends each agent its role prompt (Lead first), Goal injected.
 4. Drive them: per-panel **message box** (Enter sends), or the buttons:
-   **⮞ prompt** (resend role prompt) · **⏎ Enter** · **status** (the autopilot nudge) ·
-   **y** · **Esc** · **^C** · **restart**. Top bar: **↻ status → all**.
+   **⮞ prompt** (resend role prompt) · **⏎ Enter** · **state** (the autopilot nudge) ·
+   **y** · **Esc** · **^C** · **restart**. Top bar: **↻ state → all**.
 5. You can also click into any panel and type directly — it's a full terminal.
 
 ## Config (`agents.json`)

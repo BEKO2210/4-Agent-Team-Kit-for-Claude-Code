@@ -24,7 +24,7 @@ each other if run at the same time. Wrap them so only one runs repo-wide:
 
 ## How work flows
 - The **lead** turns the human's goal into rows on `board.md`
-  (`# · task · owner · status · notes`), sets owners, posts a kickoff line.
+  (`# · task · owner · state · notes`), sets owners, posts a kickoff line.
 - You **claim** an item: log `CLAIM #id` (lead reflects owner + `doing` on the board).
 - You **do** it in your paths → `team-commit.sh` → log `DONE #id — <proof>`.
 - **Handoff** cross-domain work — use the structured form (see § Handoffs) so it can be tracked.
@@ -58,7 +58,7 @@ Cross-domain asks must be parseable, not free prose. Use:
 **Never edit or delete another agent's lines.** Append with `>>`, not an editor,
 to avoid write races.
 
-## "status" / any nudge = continue autonomously
+## "state" / any nudge = continue autonomously
 Re-read the board + the other logs, then **do the next unblocked thing** — don't
 just report. Unblock others first. Keep the gate green.
 
