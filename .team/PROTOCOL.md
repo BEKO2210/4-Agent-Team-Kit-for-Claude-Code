@@ -78,6 +78,7 @@ the final full-gate sign-off before the lead calls it shipped.
 ## Concurrency variants (pick one; shared-tree is the default)
 - **Shared tree (default):** all 4 in the same checkout; serialize via the commit
   lock. Simplest for "4 terminals, one repo".
-- **Worktrees:** `git worktree add ../<role>` per agent; share `.team/` by committing
-  + pulling often. More isolation, more merge overhead.
+- **Worktrees:** `scripts/team-worktrees.sh setup` gives each agent its own checkout on a
+  `team/<role>` branch; the lead integrates with `git merge team/<role>`. More isolation,
+  more merge overhead.
 - **Clones:** one clone per agent, lead integrates via PRs. Most isolation, slowest loop.

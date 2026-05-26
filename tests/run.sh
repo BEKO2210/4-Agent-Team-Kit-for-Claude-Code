@@ -13,7 +13,7 @@ ok() { printf '  \033[32mok\033[0m  %s\n' "$1"; pass=$((pass + 1)); }
 no() { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fail=$((fail + 1)); }
 assert() { if eval "$1"; then ok "$2"; else no "$2  [$1]"; fi; }
 
-cleanup() { for d in "${SANDBOXES[@]:-}"; do [ -n "$d" ] && rm -rf "$d"; done; }
+cleanup() { for d in "${SANDBOXES[@]:-}"; do [ -n "$d" ] && rm -rf "$d" "$d"-*; done; }
 trap cleanup EXIT
 
 new_sandbox() {
@@ -22,7 +22,7 @@ new_sandbox() {
   cp "$SRC/scripts/lib/lock.sh" "$SB/scripts/lib/"
   local s
   for s in team-commit team-exclusive team-health team-sync team-lint-log \
-           team-resume team-lead-claim team-backup team-metrics; do
+           team-resume team-lead-claim team-backup team-metrics team-worktrees; do
     cp "$SRC/scripts/$s.sh" "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
   done
   # a passing gate inside the sandbox (so team-commit's gate succeeds in isolation)
@@ -157,6 +157,18 @@ assert '[ "$RC" -eq 0 ]'                                'metrics: returns 0'
 assert '[ -f "$SB/.team/metrics.md" ]'                 'metrics: writes metrics.md'
 assert 'grep -qi "Board progress" "$SB/.team/metrics.md"' 'metrics: reports board progress'
 assert 'printf "%s" "$OUT" | grep -q "backend"'        'metrics: per-role row for backend'
+
+echo "== team-worktrees =="
+new_sandbox
+run scripts/team-worktrees.sh setup backend
+assert '[ "$RC" -eq 0 ]'                                'worktrees: setup returns 0'
+assert '[ -d "$SB-backend" ]'                          'worktrees: creates the worktree dir'
+assert '( cd "$SB" && git show-ref --verify --quiet refs/heads/team/backend )' 'worktrees: creates the branch'
+run scripts/team-worktrees.sh list
+assert 'printf "%s" "$OUT" | grep -q "backend"'        'worktrees: list shows it'
+run scripts/team-worktrees.sh teardown backend
+assert '[ "$RC" -eq 0 ]'                                'worktrees: teardown returns 0'
+assert '[ ! -d "$SB-backend" ]'                        'worktrees: teardown removes the dir'
 
 echo
 echo "tests: $pass passed, $fail failed"
