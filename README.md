@@ -78,6 +78,7 @@ lanes, serialize their commits, and never ship red.
 | 🛟 | **Resilience** | Fallback-lead (`team-lead-claim.sh`) and `.team/` snapshots (`team-backup.sh`) so a stalled lead or a bad push isn't fatal. |
 | 🌿 | **Stronger isolation (optional)** | `team-worktrees.sh` gives each agent its own Git worktree + branch; the lead integrates by merge. |
 | 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
+| 🔌 | **Optional MCP server** | `mcp/` exposes the team state (board, logs, memory, health, metrics) as read-only Model Context Protocol resources for any MCP client. |
 | 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 58 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
@@ -242,6 +243,7 @@ flowchart TB
 │  ├─ team-role.sh        # add / list / remove team roles at runtime
 │  └─ team-handoff.sh     # produce a briefing for a fresh Claude Code session
 ├─ gui/                   # optional one-window web console (Node.js)
+├─ mcp/                   # optional read-only MCP server (exposes .team/ as resources)
 ├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
 ├─ tests/run.sh           # Bash test suite (58 checks at last count)
 ├─ docs/console.png       # GUI screenshot
@@ -285,11 +287,12 @@ Shipped in this repo:
 - [x] Dynamic / additional roles at runtime (`team-role.sh`)
 - [x] Cross-session handoff briefing (`team-handoff.sh`)
 - [x] GitHub Actions CI + live badge (`.github/workflows/gate.yml`)
+- [x] Optional read-only MCP server exposing coordination state (`mcp/`)
 
 Planned:
 
-- [ ] Optional MCP server exposing coordination state (5.3)
 - [ ] Sub-teams / hierarchies (4.2)
+- [ ] Cross-repo federation for multi-service teams (5.2)
 
 See [`ROADMAP.md`](ROADMAP.md) for the full phased plan, priorities, and rationale.
 

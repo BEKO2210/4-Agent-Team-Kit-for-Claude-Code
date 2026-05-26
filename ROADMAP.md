@@ -67,7 +67,10 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 
 ## Umsetzungsstand (dieser Branch)
 
-✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 58 grün, CI grün):
+✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 58 grün + 12 MCP-Smoke-Tests, CI grün):
+- **5.3** `mcp/` — read-only MCP-Server (stdio) exponiert `.team/` als MCP-Ressourcen
+  (`team://state|board|memory|protocol|health|metrics|log/<role>`) + Tools (`team_state`,
+  `refresh_metrics`). Eigenes `package.json` (opt-in), Kern bleibt zero-deps. 12 Smoke-Tests.
 - **5.1** `.github/workflows/gate.yml` — GitHub Actions führt bei jedem Push das volle Gate aus
   (`bash -n` + `shellcheck -S warning` + Test-Suite). Live-Badge im README.
 - **4.1** `team-role.sh add|list|remove` + `.team/roles/_template.md` — Rollen zur Laufzeit
@@ -96,8 +99,8 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 - **6.1** `.team/memory.md` (run-übergreifender Speicher) + Start-Prompts lesen ihn.
 - **Gate/Tests:** `team-check.sh` prüft `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` (39 Tests).
 
-⏭️ **Als Nächstes** (laut Priorisierung): 5.3 MCP-Server (read-only State-Exposition) ·
-4.2 Sub-Teams · 5.2 Cross-Repo-Federation.
+⏭️ **Als Nächstes** (laut Priorisierung): 4.2 Sub-Teams (leichtgewichtige Hierarchien) ·
+5.2 Cross-Repo-Federation.
 
 > Design-Grundlage: kurze Recherche zu (a) sicherer Bash-Concurrency [mkdir/flock, TOCTOU,
 > `kill -0`], (b) Blackboard/Event-Sourcing [Logs als Event-Stream, Board als Projektion;
