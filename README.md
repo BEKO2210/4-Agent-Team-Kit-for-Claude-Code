@@ -79,7 +79,7 @@ lanes, serialize their commits, and never ship red.
 | 🌿 | **Stronger isolation (optional)** | `team-worktrees.sh` gives each agent its own Git worktree + branch; the lead integrates by merge. |
 | 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
 | 🔌 | **Optional MCP server** | `mcp/` exposes the team state (board, logs, memory, health, metrics) as read-only Model Context Protocol resources for any MCP client. |
-| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 58 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
+| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 67 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
 
@@ -116,7 +116,7 @@ $EDITOR .team/roles/*.md          # point each lane's globs at YOUR repo
 **3. Verify the scripts work**
 
 ```bash
-bash tests/run.sh                 # the script test suite (58 checks at last count); all should pass
+bash tests/run.sh                 # the script test suite (67 checks at last count); all should pass
 scripts/team-health.sh            # prints a team-health report
 ```
 
@@ -154,6 +154,8 @@ scripts/team-lint-log.sh                # validate structured @role handoff line
 scripts/team-worktrees.sh setup         # per-role git worktrees for stronger isolation
 scripts/team-role.sh add <name> <globs> # add a runtime role + emit its start prompt
 scripts/team-handoff.sh                 # produce a briefing for a fresh session
+scripts/team-sections.sh                # per-section view (board.md "## name" headings)
+scripts/team-federate.sh <repo>...      # aggregate boards across multiple repos
 scripts/team-commit.sh --dry-run <role> "msg" <paths>   # run the gate + preview, don't commit
 ```
 
@@ -241,11 +243,13 @@ flowchart TB
 │  ├─ team-lint-log.sh    # validate @role handoff lines
 │  ├─ team-worktrees.sh   # per-role git worktrees
 │  ├─ team-role.sh        # add / list / remove team roles at runtime
-│  └─ team-handoff.sh     # produce a briefing for a fresh Claude Code session
+│  ├─ team-handoff.sh     # produce a briefing for a fresh Claude Code session
+│  ├─ team-sections.sh    # per-section board view (sub-teams)
+│  └─ team-federate.sh    # cross-repo aggregation for a meta-lead view
 ├─ gui/                   # optional one-window web console (Node.js)
 ├─ mcp/                   # optional read-only MCP server (exposes .team/ as resources)
 ├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
-├─ tests/run.sh           # Bash test suite (58 checks at last count)
+├─ tests/run.sh           # Bash test suite (67 checks at last count)
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
 ├─ ROADMAP.md             # phased plan + implementation state
@@ -256,7 +260,7 @@ flowchart TB
 
 - **Continuous integration** — every push runs [`.github/workflows/gate.yml`](.github/workflows/gate.yml),
   which executes the full green gate (`bash -n` + `shellcheck` + the test suite) on Ubuntu.
-- **Tests** — `bash tests/run.sh` runs 58 sandboxed checks against the real scripts; no
+- **Tests** — `bash tests/run.sh` runs 67 sandboxed checks against the real scripts; no
   external test framework is required.
 - **Green gate** — [`scripts/team-check.sh`](scripts/team-check.sh) syntax-checks every
   script (`bash -n`), runs `shellcheck -S warning` when available, and runs the test suite.
@@ -288,11 +292,12 @@ Shipped in this repo:
 - [x] Cross-session handoff briefing (`team-handoff.sh`)
 - [x] GitHub Actions CI + live badge (`.github/workflows/gate.yml`)
 - [x] Optional read-only MCP server exposing coordination state (`mcp/`)
+- [x] Sub-team sections in the board (`team-sections.sh`)
+- [x] Cross-repo federation for multi-service teams (`team-federate.sh`)
 
-Planned:
-
-- [ ] Sub-teams / hierarchies (4.2)
-- [ ] Cross-repo federation for multi-service teams (5.2)
+All numbered roadmap milestones are shipped. The remaining backlog is the optional
+"academic" appendix (BDI / Contract Net / partial global planning / org self-design),
+which the kit intentionally omits to stay simple — see [`ROADMAP.md`](ROADMAP.md).
 
 See [`ROADMAP.md`](ROADMAP.md) for the full phased plan, priorities, and rationale.
 

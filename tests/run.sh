@@ -23,7 +23,7 @@ new_sandbox() {
   local s
   for s in team-commit team-exclusive team-health team-sync team-lint-log \
            team-resume team-lead-claim team-backup team-metrics team-worktrees \
-           team-role team-handoff; do
+           team-role team-handoff team-sections team-federate; do
     cp "$SRC/scripts/$s.sh" "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
   done
   # a passing gate inside the sandbox (so team-commit's gate succeeds in isolation)
@@ -196,6 +196,44 @@ assert 'printf "%s" "$OUT" | grep -q "backend"'        'worktrees: list shows it
 run scripts/team-worktrees.sh teardown backend
 assert '[ "$RC" -eq 0 ]'                                'worktrees: teardown returns 0'
 assert '[ ! -d "$SB-backend" ]'                        'worktrees: teardown removes the dir'
+
+echo "== team-sections =="
+new_sandbox
+cat > "$SB/.team/board.md" <<'EOF'
+# Board
+
+## Backend
+| #  | Task | Owner    | State   | Notes |
+|----|------|----------|---------|-------|
+| 1  | api  | backend  | done    | —     |
+| 2  | db   | backend  | doing   | —     |
+
+## Frontend
+| #  | Task | Owner    | State   | Notes |
+|----|------|----------|---------|-------|
+| 3  | ui   | frontend | todo    | —     |
+EOF
+run scripts/team-sections.sh
+assert '[ "$RC" -eq 0 ]'                                'sections: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "^## Backend"'    'sections: shows Backend heading'
+assert 'printf "%s" "$OUT" | grep -q "^## Frontend"'   'sections: shows Frontend heading'
+assert 'printf "%s" "$OUT" | grep -q "done=1"'         'sections: counts Backend done correctly'
+assert 'printf "%s" "$OUT" | grep -q "backend(2)"'     'sections: aggregates owners per section'
+
+echo "== team-federate =="
+new_sandbox
+SB2="$(mktemp -d)"; SANDBOXES+=("$SB2")
+mkdir -p "$SB2/.team"
+cat > "$SB2/.team/board.md" <<'EOF'
+| #  | Task | Owner | State | Notes |
+|----|------|-------|-------|-------|
+| 1  | x    | lead  | done  | —     |
+EOF
+run scripts/team-federate.sh "$SB" "$SB2"
+assert '[ "$RC" -eq 0 ]'                                'federate: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "TOTAL"'          'federate: emits TOTAL row'
+assert 'printf "%s" "$OUT" | grep -q "done=1"'         'federate: aggregates done count'
+assert 'printf "%s" "$OUT" | grep -qE "REPO[[:space:]]+TOTAL"' 'federate: prints header'
 
 echo
 echo "tests: $pass passed, $fail failed"

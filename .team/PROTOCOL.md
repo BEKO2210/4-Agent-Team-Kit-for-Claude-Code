@@ -75,6 +75,20 @@ the final full-gate sign-off before the lead calls it shipped.
 - **Backup:** `team-backup.sh` snapshots `.team/` so git is not the only copy of the
   coordination state. Never force-push the shared branch without team agreement.
 
+## Sub-teams (optional, convention-only)
+For larger boards the lead may organise work into sub-team sections by inserting
+`## <name>` headings in `board.md`; each heading owns the table(s) below it.
+`scripts/team-sections.sh` reports per-section counts and owners. A board with no
+`##` headings still works — every row belongs to one implicit `(main)` section.
+The lead may name a sub-lead per section by convention (e.g. annotate them in the
+section's Notes column). `team-sync`, `team-health` and `team-metrics` treat the
+board as a whole, so sections are purely additive.
+
+## Cross-repo federation (optional)
+For multi-service setups where each repo has its own `.team/`, a "meta-lead" can
+aggregate progress with `scripts/team-federate.sh <repo>...`. Each repo keeps
+coordinating itself; the script just folds per-repo board counts into one summary.
+
 ## Concurrency variants (pick one; shared-tree is the default)
 - **Shared tree (default):** all 4 in the same checkout; serialize via the commit
   lock. Simplest for "4 terminals, one repo".
