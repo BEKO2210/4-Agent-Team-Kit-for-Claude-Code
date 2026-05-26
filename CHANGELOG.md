@@ -79,7 +79,7 @@ optional academic appendix is left out.
 - `schema/team-state.schema.json` — JSON Schema (draft 2020-12) describing the contract
   shared by `/state`, `team://state` and `team-snapshot`.
 - `examples/todo-cli/` — a worked example: kickoff, board fixture, representative logs.
-- `tests/run.sh` — sandboxed Bash test suite (77 checks at this tag).
+- `tests/run.sh` — sandboxed Bash test suite (87 checks at this tag).
 - `tests/validate-schema.mjs` — structural sanity check for the JSON Schema.
 - `.github/workflows/gate.yml` — GitHub Actions runs the gate on every push / PR.
 - Premium English README + the German `README.de.md`.

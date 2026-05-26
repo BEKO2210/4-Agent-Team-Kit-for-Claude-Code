@@ -259,6 +259,26 @@ assert '[ "$RC" -eq 0 ]'                                'diff: returns 0'
 assert 'printf "%s" "$OUT" | grep -q "#1"'             'diff: mentions changed task #1'
 assert 'printf "%s" "$OUT" | grep -qE "doing.*->.*done"' 'diff: reports state transition'
 
+echo "== team-init =="
+TARGET="$(mktemp -d)"; SANDBOXES+=("$TARGET")
+( cd "$TARGET" && git init -q && git config user.email t@t && git config user.name t \
+    && git config commit.gpgsign false && git commit -q --allow-empty -m init ) >/dev/null
+OUT="$(bash "$SRC/scripts/team-init.sh" "$TARGET" 2>&1)"; RC=$?
+assert '[ "$RC" -eq 0 ]'                                'init: returns 0'
+assert '[ -d "$TARGET/.team/roles" ]'                  'init: copies .team/'
+assert '[ -x "$TARGET/scripts/team-commit.sh" ]'       'init: scripts are executable'
+assert '[ -f "$TARGET/lib/state.mjs" ]'                'init: copies lib/state.mjs'
+assert 'grep -q ".team/locks/\*" "$TARGET/.gitignore"' 'init: extends .gitignore'
+OUT="$(bash "$SRC/scripts/team-init.sh" "$TARGET" 2>&1)"; RC=$?
+assert '[ "$RC" -ne 0 ]'                                'init: refuses to overwrite an existing .team/'
+
+echo "== team-demo =="
+OUT="$(bash "$SRC/scripts/team-demo.sh" 2>&1)"; RC=$?
+assert '[ "$RC" -eq 0 ]'                                'demo: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "team-health.sh"' 'demo: walks through team-health'
+assert 'printf "%s" "$OUT" | grep -q "team-sync.sh"'   'demo: walks through team-sync'
+assert 'printf "%s" "$OUT" | grep -q "team-snapshot.sh"' 'demo: walks through team-snapshot'
+
 echo "== JSON Schema sanity =="
 ( cd "$SRC" && node tests/validate-schema.mjs > /tmp/_schema.out 2>&1 ); rc=$?
 if [ "$rc" -eq 0 ]; then ok "schema: structural checks pass"; else no "schema: validate-schema.mjs failed (rc=$rc)"; sed 's/^/    /' /tmp/_schema.out; fi

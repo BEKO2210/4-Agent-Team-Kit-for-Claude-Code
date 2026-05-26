@@ -20,7 +20,7 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 - The build badge is a **live** Shields badge wired to `.github/workflows/gate.yml`. It
   reflects the latest gate run on the default branch (`main`); during this PR it may show
   "no state" on `main` until the workflow has run there post-merge.
-- The check count in prose ("77 checks at last count") is accurate at write time. The
+- The check count in prose ("87 checks at last count") is accurate at write time. The
   badge does not encode the number, so adding new tests does not require a README edit.
 - Privacy is described as local/file-based because the kit only reads and writes files in
   the repo; there is no network/telemetry component in the core scripts.
@@ -34,7 +34,7 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 - **Badges** — all five are static `img.shields.io/badge/...` URLs (render regardless of
   repo visibility); no dynamic or CI badges are used.
 - **Commands** — every command is derived from real files: setup (`.team/`, `scripts/`),
-  the gate (`scripts/team-check.sh`), the suite (`bash tests/run.sh`, currently 77 checks), the
+  the gate (`scripts/team-check.sh`), the suite (`bash tests/run.sh`, currently 87 checks), the
   helper scripts (each exists in `scripts/`), and the GUI (`node gui/server.js`, port 4173
   per `gui/README.md`).
 - **Hero SVG** — rendered headless to confirm it displays correctly.

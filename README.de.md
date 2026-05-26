@@ -80,7 +80,7 @@ und die Agenten bleiben in ihrer Spur, serialisieren ihre Commits, committen nie
 | 🖥️ | **Optionale Live-Konsole** | Eine kleine lokale Web-UI (`gui/`) führt alle vier Sessions in einem Fenster mit einer Live-Vitals-Leiste. |
 | 🔌 | **Optionaler MCP-Server** | `mcp/` exponiert den Team-Zustand (Board, Logs, Memory, Health, Metriken) als read-only MCP-Ressourcen für jeden MCP-Client. |
 | 🧬 | **Typisierter State** | `schema/team-state.schema.json` ist der maschinen-validierbare Vertrag, den `/state`, der MCP-Server und `team-snapshot.sh` einhalten. |
-| 🧪 | **In CI getestet** | Eine eigenständige Bash-Test-Suite (`tests/run.sh`, aktuell 77 Checks) läuft bei jedem Push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml). |
+| 🧪 | **In CI getestet** | Eine eigenständige Bash-Test-Suite (`tests/run.sh`, aktuell 87 Checks) läuft bei jedem Push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml). |
 
 ## Vorschau
 
@@ -118,7 +118,7 @@ $EDITOR .team/roles/*.md          # die Globs jeder Lane an dein Repo anpassen
 **3. Skripte verifizieren**
 
 ```bash
-bash tests/run.sh                 # die Test-Suite (aktuell 77 Checks); muss grün sein
+bash tests/run.sh                 # die Test-Suite (aktuell 87 Checks); muss grün sein
 scripts/team-health.sh            # gibt einen Health-Report aus
 ```
 
@@ -216,7 +216,7 @@ flowchart TB
 ├─ mcp/                   # optionaler read-only MCP-Server
 ├─ examples/              # gearbeitete Beispiele (Todo-CLI etc.)
 ├─ .github/workflows/     # GitHub Actions Gate
-├─ tests/run.sh           # Bash-Test-Suite (aktuell 77 Checks)
+├─ tests/run.sh           # Bash-Test-Suite (aktuell 87 Checks)
 ├─ docs/console.png       # GUI-Screenshot
 ├─ PROMPTS.md             # die 4 Copy-Paste-Prompts
 ├─ ROADMAP.md             # phasierter Plan + Stand
@@ -228,7 +228,7 @@ flowchart TB
 
 - **Continuous Integration** — jeder Push führt [`.github/workflows/gate.yml`](.github/workflows/gate.yml)
   aus: `bash -n` + `shellcheck -S warning` + die volle Test-Suite auf Ubuntu.
-- **Tests** — `bash tests/run.sh` läuft 77 sandboxed Checks gegen die echten Skripte; keine
+- **Tests** — `bash tests/run.sh` läuft 87 sandboxed Checks gegen die echten Skripte; keine
   Test-Framework-Abhängigkeit. `mcp/test.js` führt 12 zusätzliche MCP-Smoke-Tests.
 - **Nebenläufigkeits-Sicherheit** — Locks nutzen ein atomares `mkdir`-Verzeichnis mit
   PID-Liveness-Erkennung und atomarem rename-Break; zwei Agenten können nie denselben Lock
