@@ -26,6 +26,11 @@ new_sandbox() {
            team-role team-handoff team-sections team-federate; do
     cp "$SRC/scripts/$s.sh" "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
   done
+  # Node helpers (snapshot/diff) — copy both the wrapper and the .mjs implementation
+  for s in team-snapshot team-diff; do
+    cp "$SRC/scripts/$s.sh"  "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
+    cp "$SRC/scripts/$s.mjs" "$SB/scripts/"
+  done
   # a passing gate inside the sandbox (so team-commit's gate succeeds in isolation)
   printf '#!/usr/bin/env bash\nexit 0\n' > "$SB/scripts/team-check.sh"
   chmod +x "$SB/scripts/team-check.sh"
@@ -234,6 +239,28 @@ assert '[ "$RC" -eq 0 ]'                                'federate: returns 0'
 assert 'printf "%s" "$OUT" | grep -q "TOTAL"'          'federate: emits TOTAL row'
 assert 'printf "%s" "$OUT" | grep -q "done=1"'         'federate: aggregates done count'
 assert 'printf "%s" "$OUT" | grep -qE "REPO[[:space:]]+TOTAL"' 'federate: prints header'
+
+echo "== team-snapshot + team-diff =="
+new_sandbox
+run scripts/team-snapshot.sh
+assert '[ "$RC" -eq 0 ]'                                'snapshot: returns 0'
+assert 'printf "%s" "$OUT" | head -c 1 | grep -q "{"'  'snapshot: emits JSON'
+assert 'printf "%s" "$OUT" | grep -q "\"generatedAt\""' 'snapshot: has generatedAt'
+assert 'printf "%s" "$OUT" | grep -q "\"counts\""'     'snapshot: has counts'
+assert 'printf "%s" "$OUT" | grep -q "\"tasks\""'      'snapshot: has tasks'
+assert 'printf "%s" "$OUT" | grep -q "\"roles\""'      'snapshot: has roles'
+# capture snapshot A, mutate board, capture B, diff
+( cd "$SB" && scripts/team-snapshot.sh > A.json )
+sed -i 's/| 1  | a    | backend  | doing  | —     |/| 1  | a    | backend  | done   | —     |/' "$SB/.team/board.md"
+( cd "$SB" && scripts/team-snapshot.sh > B.json )
+run scripts/team-diff.sh A.json B.json
+assert '[ "$RC" -eq 0 ]'                                'diff: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "#1"'             'diff: mentions changed task #1'
+assert 'printf "%s" "$OUT" | grep -qE "doing.*->.*done"' 'diff: reports state transition'
+
+echo "== JSON Schema sanity =="
+( cd "$SRC" && node tests/validate-schema.mjs > /tmp/_schema.out 2>&1 ); rc=$?
+if [ "$rc" -eq 0 ]; then ok "schema: structural checks pass"; else no "schema: validate-schema.mjs failed (rc=$rc)"; sed 's/^/    /' /tmp/_schema.out; fi
 
 echo
 echo "tests: $pass passed, $fail failed"

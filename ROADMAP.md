@@ -104,6 +104,17 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 - **6.1** `.team/memory.md` (run-übergreifender Speicher) + Start-Prompts lesen ihn.
 - **Gate/Tests:** `team-check.sh` prüft `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` (39 Tests).
 
+**Bonus (über die nummerierte Roadmap hinaus, inspiriert vom rmux-Review):**
+- **Typisierter State-Vertrag** — `schema/team-state.schema.json` (JSON-Schema 2020-12)
+  beschreibt verbindlich das Format, das `/state`, der MCP-Server und `team-snapshot.sh`
+  ausgeben. `tests/validate-schema.mjs` sichert die Vertragseinhaltung ab.
+- **Strukturierte Snapshots + Diff** — `scripts/team-snapshot.{mjs,sh}` faltet den
+  vollständigen Team-Zustand in ein selbständiges JSON-Dokument; `scripts/team-diff.{mjs,sh}`
+  vergleicht zwei Snapshots (Counts-Deltas, geänderte Tasks, Rollen-State-Wechsel).
+- **Gearbeitetes Beispiel** — `examples/todo-cli/` (Kickoff, Board-Fixture, repräsentative Logs).
+- **Mehrsprachige Doku** — `README.de.md` ergänzt die englische README.
+- **Release-Hygiene** — `CHANGELOG.md` (v0.1.0 — initial public preview).
+
 ⏭️ **Offen**: Alle nummerierten Roadmap-Punkte sind geshipt. Es bleibt nur der bewusst
 optionale **Anhang A** (BDI / Contract Net / Partial Global Planning / Org Self-Design) —
 der wird laut Design-Prinzip nur umgesetzt, wenn ein konkreter Anwendungsfall ihn erzwingt.
