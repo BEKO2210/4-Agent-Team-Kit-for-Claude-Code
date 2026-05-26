@@ -14,6 +14,6 @@
 - inputs validated; errors degrade gracefully (no crashes / no 5xx);
   edge cases + happy path covered by tests; gate green.
 
-## On `status`
+## On `state`
 Re-read board + logs → take your next unblocked row → implement → test →
 `team-commit.sh backend "…" <paths>` → log `DONE #id — <proof>`.

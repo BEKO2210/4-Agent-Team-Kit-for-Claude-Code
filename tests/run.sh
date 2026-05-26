@@ -36,7 +36,7 @@ new_sandbox() {
     printf '# log %s\n' "$r" > "$SB/.team/log/$r.md"
   done
   cat > "$SB/.team/board.md" <<'EOF'
-| #  | Task | Owner    | Status | Notes |
+| #  | Task | Owner    | State | Notes |
 |----|------|----------|--------|-------|
 | 1  | a    | backend  | doing  | —     |
 | 2  | b    | frontend | todo   | —     |
@@ -88,7 +88,7 @@ assert 'printf "%s" "$OUT" | grep -q "#1"'             'health: flags stale doin
 echo "== team-health deadlock =="
 new_sandbox
 cat > "$SB/.team/board.md" <<'EOF'
-| #  | Task | Owner    | Status  | Notes |
+| #  | Task | Owner    | State  | Notes |
 |----|------|----------|---------|-------|
 | 1  | a    | backend  | blocked | —     |
 EOF

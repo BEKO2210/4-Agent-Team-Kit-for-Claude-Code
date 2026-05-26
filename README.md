@@ -9,7 +9,7 @@ no database, no message broker, no framework. Coordination lives entirely in a `
 folder of Markdown and a handful of POSIX shell scripts.
 
 <p>
-  <a href="https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/actions/workflows/gate.yml"><img alt="Gate workflow status" src="https://img.shields.io/github/actions/workflow/status/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/gate.yml?label=gate"></a>
+  <a href="https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/actions/workflows/gate.yml"><img alt="Gate workflow state" src="https://img.shields.io/github/actions/workflow/status/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/gate.yml?label=gate"></a>
   <a href="LICENSE"><img alt="License: Private Use" src="https://img.shields.io/badge/license-Private%20Use-e8a33d"></a>
   <img alt="Built for Claude Code" src="https://img.shields.io/badge/built%20for-Claude%20Code-5b8cff">
   <img alt="Core dependencies: zero" src="https://img.shields.io/badge/core%20deps-0-2ea043">
@@ -78,6 +78,7 @@ lanes, serialize their commits, and never ship red.
 | 🛟 | **Resilience** | Fallback-lead (`team-lead-claim.sh`) and `.team/` snapshots (`team-backup.sh`) so a stalled lead or a bad push isn't fatal. |
 | 🌿 | **Stronger isolation (optional)** | `team-worktrees.sh` gives each agent its own Git worktree + branch; the lead integrates by merge. |
 | 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
+| 🔌 | **Optional MCP server** | `mcp/` exposes the team state (board, logs, memory, health, metrics) as read-only Model Context Protocol resources for any MCP client. |
 | 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 58 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
@@ -127,11 +128,11 @@ scripts/team-health.sh            # prints a team-health report
 2. Paste the matching block from [`PROMPTS.md`](PROMPTS.md) — Lead, Backend, Frontend, Quality.
 3. In the **Lead** terminal, replace `<<< paste … >>>` with your goal.
 4. The lead fills the board and pings the others; they start working their lanes.
-5. Nudge any terminal with `status` to push it forward; it continues autonomously.
+5. Nudge any terminal with `state` to push it forward; it continues autonomously.
 6. Done when every board row is `done`, quality signs the gate, and the lead pushes.
 
 > [!TIP]
-> `status` means *do the next thing*, not *report*. A nudged agent re-reads the board and
+> `state` means *do the next thing*, not *report*. A nudged agent re-reads the board and
 > the other logs, unblocks others first, and keeps the gate green.
 
 **The rules in one breath**
@@ -177,7 +178,7 @@ node gui/server.js            # → http://localhost:4173
 ```
 
 The console runs each agent as a real terminal, adds buttons for the common commands
-(Kickoff, `status`, Enter, `y`, Esc, ^C, restart), and polls `.team/` for the live vitals
+(Kickoff, `state`, Enter, `y`, Esc, ^C, restart), and polls `.team/` for the live vitals
 strip. Details in [`gui/README.md`](gui/README.md).
 
 ## Architecture
@@ -206,7 +207,7 @@ flowchart TB
   agents --> logs
   agents -. read .-> board
   agents --> scripts --> team
-  gui[["gui/ — optional console"]] -. reads status .-> team
+  gui[["gui/ — optional console"]] -. reads state .-> team
 ```
 
 - **Agents** are four `claude` sessions, each with an explicit lane and definition-of-done
@@ -242,11 +243,12 @@ flowchart TB
 │  ├─ team-role.sh        # add / list / remove team roles at runtime
 │  └─ team-handoff.sh     # produce a briefing for a fresh Claude Code session
 ├─ gui/                   # optional one-window web console (Node.js)
+├─ mcp/                   # optional read-only MCP server (exposes .team/ as resources)
 ├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
 ├─ tests/run.sh           # Bash test suite (58 checks at last count)
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
-├─ ROADMAP.md             # phased plan + implementation status
+├─ ROADMAP.md             # phased plan + implementation state
 └─ LICENSE                # Private Use
 ```
 
@@ -281,15 +283,16 @@ Shipped in this repo:
 - [x] Throughput metrics (`team-metrics.sh`)
 - [x] Structured handoff schema + linter (`team-lint-log.sh`)
 - [x] Git worktrees for stronger isolation (`team-worktrees.sh`)
-- [x] Live web console with vitals (`gui/`, `/status`)
+- [x] Live web console with vitals (`gui/`, `/state`)
 - [x] Dynamic / additional roles at runtime (`team-role.sh`)
 - [x] Cross-session handoff briefing (`team-handoff.sh`)
 - [x] GitHub Actions CI + live badge (`.github/workflows/gate.yml`)
+- [x] Optional read-only MCP server exposing coordination state (`mcp/`)
 
 Planned:
 
-- [ ] Optional MCP server exposing coordination state (5.3)
 - [ ] Sub-teams / hierarchies (4.2)
+- [ ] Cross-repo federation for multi-service teams (5.2)
 
 See [`ROADMAP.md`](ROADMAP.md) for the full phased plan, priorities, and rationale.
 

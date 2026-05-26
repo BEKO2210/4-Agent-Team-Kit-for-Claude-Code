@@ -6,7 +6,7 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 
 - Rewrote `README.md` as a premium-but-honest landing page: centered hero, value
   proposition, feature matrix, preview, copy-paste quickstart, usage, a Mermaid
-  architecture diagram, project tree, quality/security section, status roadmap, and
+  architecture diagram, project tree, quality/security section, state roadmap, and
   contributing/license/acknowledgements.
 - Added a self-contained hero asset at `assets/readme/hero.svg` (no scripts, no external
   references — GitHub-safe and readable without animation).
@@ -19,7 +19,7 @@ A record of how the current `README.md` was produced, so its claims stay verifia
   `1.0.0`, but that is the GUI sub-package only, not a release of the whole kit.
 - The build badge is a **live** Shields badge wired to `.github/workflows/gate.yml`. It
   reflects the latest gate run on the default branch (`main`); during this PR it may show
-  "no status" on `main` until the workflow has run there post-merge.
+  "no state" on `main` until the workflow has run there post-merge.
 - The "58 checks" count in prose is accurate at the time of writing. New scripts may
   raise it later; the badge does not encode the number.
 - Privacy is described as local/file-based because the kit only reads and writes files in

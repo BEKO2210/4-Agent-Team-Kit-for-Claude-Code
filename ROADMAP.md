@@ -54,7 +54,7 @@
 | **0** | Fundament & Quick Wins | Skripte robuster, sicheres Testen | S (1–2 Tage) |
 | **1** | Robustheit & Selbstheilung | Board-Sync-Watchdog, Stale-Task, Health-Check, Auto-Resume, Deadlock | M |
 | **2** | Isolation & Resilienz | Worktrees, Fallback-Lead, Backup des Koordinationszustands | M–L |
-| **3** | Transparenz & Metriken | Board-Metriken, Live-Status in der GUI | M |
+| **3** | Transparenz & Metriken | Board-Metriken, Live-State in der GUI | M |
 | **4** | Skalierbarkeit & Kommunikation | Dynamische Rollen, Sub-Teams, strukturiertes Handoff-Schema | L |
 | **5** | Integration & Automatisierung | GitHub Actions / Webhooks, MCP, Cross-Repo | L |
 | **6** | Persistenz & Lernen | Run-übergreifender Speicher, Handoff | M–L |
@@ -67,7 +67,10 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 
 ## Umsetzungsstand (dieser Branch)
 
-✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 58 grün, CI grün):
+✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 58 grün + 12 MCP-Smoke-Tests, CI grün):
+- **5.3** `mcp/` — read-only MCP-Server (stdio) exponiert `.team/` als MCP-Ressourcen
+  (`team://state|board|memory|protocol|health|metrics|log/<role>`) + Tools (`team_state`,
+  `refresh_metrics`). Eigenes `package.json` (opt-in), Kern bleibt zero-deps. 12 Smoke-Tests.
 - **5.1** `.github/workflows/gate.yml` — GitHub Actions führt bei jedem Push das volle Gate aus
   (`bash -n` + `shellcheck -S warning` + Test-Suite). Live-Badge im README.
 - **4.1** `team-role.sh add|list|remove` + `.team/roles/_template.md` — Rollen zur Laufzeit
@@ -90,14 +93,14 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 - **2.2** `team-lead-claim.sh` + Fallback-Lead-Konvention (genau ein aktiver Lead via `.team/state/lead`).
 - **2.3** `team-backup.sh` — Snapshot/Restore des `.team/`-Zustands (Schutz vor „Git = einzige Kopie").
 - **3.1** `team-metrics.sh` — Durchsatz pro Rolle + Board-Fortschritt → `.team/metrics.md`.
-- **3.2** GUI Live-Status: `/status`-Endpoint + neue „TEAM // CONSOLE"-Oberfläche
+- **3.2** GUI Live-State: `/state`-Endpoint + neue „TEAM // CONSOLE"-Oberfläche
   (Vitals-Leiste mit Board-Fortschritt + Agent-Health, farbcodierte Decks, Motion) via `frontend-design`-Skill.
 - **4.3** Handoff-Schema in `PROTOCOL.md` + `team-lint-log.sh`.
 - **6.1** `.team/memory.md` (run-übergreifender Speicher) + Start-Prompts lesen ihn.
 - **Gate/Tests:** `team-check.sh` prüft `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` (39 Tests).
 
-⏭️ **Als Nächstes** (laut Priorisierung): 5.3 MCP-Server (read-only Status-Exposition) ·
-4.2 Sub-Teams · 5.2 Cross-Repo-Federation.
+⏭️ **Als Nächstes** (laut Priorisierung): 4.2 Sub-Teams (leichtgewichtige Hierarchien) ·
+5.2 Cross-Repo-Federation.
 
 > Design-Grundlage: kurze Recherche zu (a) sicherer Bash-Concurrency [mkdir/flock, TOCTOU,
 > `kill -0`], (b) Blackboard/Event-Sourcing [Logs als Event-Stream, Board als Projektion;
@@ -132,10 +135,10 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 - **Aufwand:** S
 
 ### 0.4 `.gitignore` für Laufzeit-Artefakte erweitern
-- **Problem:** Neue Runtime-Dateien (`events.log`, Metriken, Health-Status) dürfen nicht ins Git.
+- **Problem:** Neue Runtime-Dateien (`events.log`, Metriken, Health-State) dürfen nicht ins Git.
 - **Lösung:** Muster ergänzen: `.team/log/events.log`, `.team/state/*`.
 - **Dateien:** `.gitignore`
-- **Akzeptanz:** `git status` zeigt nach einem Run keine Runtime-Artefakte als untracked.
+- **Akzeptanz:** `git state` zeigt nach einem Run keine Runtime-Artefakte als untracked.
 - **Aufwand:** S
 
 ---
@@ -144,8 +147,8 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ### 1.0 Board-Synchronisations-Watchdog ⭐ (PDF-Priorität: **Kritisch**)
 - **Problem (W2):** Der Lead pflegt `board.md` manuell aus den Logs. Vergisst er ein Update, driften Board und Logs auseinander → Inkonsistenz, die größte Praxis-Schwäche laut PDF.
-- **Lösung:** `scripts/team-sync.sh` parst `.team/log/*.md` (CLAIM/DONE/BLOCKED + #id) und vergleicht mit `board.md`. **Stufe 1 (sicher, empfohlen):** nur *Drift-Report* — meldet Zeilen, deren Status nicht zum jüngsten Log passt, nach `.team/log/events.log`. **Stufe 2 (opt-in):** der Lead lässt sich daraus einen Board-Patch vorschlagen; Schreibrecht bleibt beim Lead (One-writer-Regel bleibt intakt).
-- **Dateien:** neu `scripts/team-sync.sh`; `.team/roles/lead.md` (bei `status` zuerst `team-sync.sh` laufen lassen); `.team/PROTOCOL.md`
+- **Lösung:** `scripts/team-sync.sh` parst `.team/log/*.md` (CLAIM/DONE/BLOCKED + #id) und vergleicht mit `board.md`. **Stufe 1 (sicher, empfohlen):** nur *Drift-Report* — meldet Zeilen, deren State nicht zum jüngsten Log passt, nach `.team/log/events.log`. **Stufe 2 (opt-in):** der Lead lässt sich daraus einen Board-Patch vorschlagen; Schreibrecht bleibt beim Lead (One-writer-Regel bleibt intakt).
+- **Dateien:** neu `scripts/team-sync.sh`; `.team/roles/lead.md` (bei `state` zuerst `team-sync.sh` laufen lassen); `.team/PROTOCOL.md`
 - **Akzeptanz:** Ein `DONE #3` im Log, während Board #3 noch `doing` zeigt, erzeugt eine Drift-Meldung; nach Lead-Update ist die Meldung weg.
 - **Aufwand:** M
 - **Hinweis:** Bewusst **kein** Auto-Writer aufs Board als Default — das würde die „One writer per file"-Regel (Lead besitzt das Board) verletzen. Erkennung + Vorschlag, nicht stilles Überschreiben.
@@ -159,9 +162,9 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ### 1.2 Health-Check für Agenten (PDF-Priorität: **Mittel**)
 - **Problem:** Es ist nicht erkennbar, ob alle 4 Agenten noch aktiv sind („Single Point of Failure: Lead").
-- **Lösung:** `scripts/team-health.sh` wertet die `mtime`/letzte Zeile jedes `.team/log/*.md` aus und meldet pro Rolle `active` / `idle` / `stale` (z. B. >15 min ohne Eintrag). Optionaler Heartbeat: Agenten schreiben bei jedem `status`-Tick eine `tick`-Zeile.
+- **Lösung:** `scripts/team-health.sh` wertet die `mtime`/letzte Zeile jedes `.team/log/*.md` aus und meldet pro Rolle `active` / `idle` / `stale` (z. B. >15 min ohne Eintrag). Optionaler Heartbeat: Agenten schreiben bei jedem `state`-Tick eine `tick`-Zeile.
 - **Dateien:** neu `scripts/team-health.sh`; Ergänzung in `.team/PROTOCOL.md` (Heartbeat-Konvention)
-- **Akzeptanz:** `scripts/team-health.sh` listet 4 Rollen mit Status; ein künstlich „altes" Log wird als `stale` markiert.
+- **Akzeptanz:** `scripts/team-health.sh` listet 4 Rollen mit State; ein künstlich „altes" Log wird als `stale` markiert.
 - **Aufwand:** S–M
 
 ### 1.3 Auto-Resume aus Git-History / Logs
@@ -215,10 +218,10 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 - **Akzeptanz:** Nach einem Run zeigt `metrics.md` je Rolle mind. „Tasks done", „Ø Dauer", „Blocker".
 - **Aufwand:** M
 
-### 3.2 Live-Status & Metriken in der GUI
-- **Problem:** Die GUI zeigt nur die 4 Terminals, keinen aggregierten Team-Status.
-- **Lösung:** Statusleiste in `gui/public/index.html`: Health (aus 1.2), Board-Fortschritt (done/total) und Kurz-Metriken (aus 3.1). `gui/server.js` liefert `/status` (parst `.team/`-Dateien) und pollt periodisch.
-- **Dateien:** `gui/server.js` (neuer `/status`-Endpoint), `gui/public/index.html` (Statusleiste)
+### 3.2 Live-State & Metriken in der GUI
+- **Problem:** Die GUI zeigt nur die 4 Terminals, keinen aggregierten Team-State.
+- **Lösung:** Statusleiste in `gui/public/index.html`: Health (aus 1.2), Board-Fortschritt (done/total) und Kurz-Metriken (aus 3.1). `gui/server.js` liefert `/state` (parst `.team/`-Dateien) und pollt periodisch.
+- **Dateien:** `gui/server.js` (neuer `/state`-Endpoint), `gui/public/index.html` (Statusleiste)
 - **Akzeptanz:** GUI zeigt „3/7 done", Health-Punkte pro Rolle, aktualisiert sich automatisch.
 - **Aufwand:** M
 
@@ -255,7 +258,7 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ### 5.1 GitHub Actions bei Board-Änderungen
 - **Problem:** Keine Außenwirkung/CI-Trigger bei Fortschritt.
-- **Lösung:** Workflow `.github/workflows/team.yml`: bei Push, der `.team/board.md` ändert, Gate laufen lassen + Board-Fortschritt als Job-Summary/Status posten. Optional: Issue/PR-Kommentar mit aktuellem Stand.
+- **Lösung:** Workflow `.github/workflows/team.yml`: bei Push, der `.team/board.md` ändert, Gate laufen lassen + Board-Fortschritt als Job-Summary/State posten. Optional: Issue/PR-Kommentar mit aktuellem Stand.
 - **Dateien:** neu `.github/workflows/team.yml`; ggf. kleines `scripts/board-summary.sh`
 - **Akzeptanz:** Ein Push mit Board-Änderung erzeugt eine CI-Summary „X/Y done".
 - **Aufwand:** M
@@ -264,7 +267,7 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 - **Problem:** Nur ein Repo koordinierbar.
 - **Lösung:** Konzept + PoC: `.team/` als Git-Submodule/Shared-Folder über mehrere Repos; ein „Meta-Lead" aggregiert Boards. Zuerst als dokumentiertes Muster, dann optionales Sync-Skript.
 - **Dateien:** `docs/cross-repo.md` (neu), optional `scripts/team-federate.sh`
-- **Akzeptanz:** Zwei Repos teilen ein konsistentes Board-Abbild; Status ist zentral lesbar.
+- **Akzeptanz:** Zwei Repos teilen ein konsistentes Board-Abbild; State ist zentral lesbar.
 - **Aufwand:** L
 
 ### 5.3 MCP-Integration (PDF-Priorität: **Mittel**)
@@ -315,7 +318,7 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 4. **1.3 Auto-Resume** + **6.1 Memory** — adressiert die größte konzeptionelle Lücke (Persistenz).
 5. **4.3 Handoff-Schema** — PDF *hoch*; macht Cross-Domain-Übergaben zuverlässig.
 6. **2.2 Fallback-Lead** + **2.3 Backup** — entschärfen die Single-Points-of-Failure (Lead, Git).
-7. **3.1/3.2 Metriken & GUI-Status** — macht Fortschritt sichtbar, motiviert.
+7. **3.1/3.2 Metriken & GUI-State** — macht Fortschritt sichtbar, motiviert.
 8. **2.1 Worktrees** — echte Parallelität, sobald Bedarf besteht.
 9. **4.1/4.2 Skalierbarkeit**, **5.x Integration (inkl. MCP)** — wenn das Kit über kleine Projekte hinauswächst.
 10. **7.1 Lizenz** — jederzeit, aber nur durch den Eigentümer.
@@ -353,7 +356,7 @@ Diese Roadmap eignet sich, um das Kit **an sich selbst** zu erproben:
 Vorgeschlagener erster Meilenstein für `board.md` (deckt die PDF-Top-Prioritäten zuerst ab):
 
 ```
-| #  | Task                                      | Owner    | Status | Notes                  |
+| #  | Task                                      | Owner    | State | Notes                  |
 | 1  | 0.3 lib/lock.sh extrahieren               | backend  | todo   | Basis für 0.1/0.2      |
 | 2  | 0.1 --dry-run in team-commit.sh           | backend  | todo   | nach #1                |
 | 3  | 0.2 events.log + 0.4 .gitignore           | backend  | todo   | nach #1                |

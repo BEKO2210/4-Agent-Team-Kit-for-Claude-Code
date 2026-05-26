@@ -2,7 +2,7 @@
 # Board <-> log drift report.
 # Design: the append-only logs are the AUTHORITY (an event stream of CLAIM/DONE/BLOCKED);
 # the board is a human-maintained PROJECTION of them. This script folds the logs into the
-# status each task SHOULD have and reports where board.md disagrees — so the LEAD can
+# state each task SHOULD have and reports where board.md disagrees — so the LEAD can
 # reconcile. It deliberately does NOT edit the board (the board has exactly one writer).
 #   scripts/team-sync.sh [--strict]
 # --strict: exit 1 when any drift is found (useful inside a gate).

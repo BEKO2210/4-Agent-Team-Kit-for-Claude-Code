@@ -14,6 +14,6 @@
 - keyboard + screen-reader accessible (labels on icon-only controls, focus, Esc);
 - all user-facing strings localized; responsive across viewports; gate green.
 
-## On `status`
+## On `state`
 Re-read board + logs → take your next unblocked row → build it → verify states →
 `team-commit.sh frontend "…" <paths>` → log `DONE #id — <proof>`.

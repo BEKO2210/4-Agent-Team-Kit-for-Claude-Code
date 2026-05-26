@@ -14,7 +14,7 @@ through the .team/ folder. Read .team/PROTOCOL.md, .team/roles/lead.md and
 THE GOAL:
 <<< paste what you want the team to build/fix here >>>
 
-Break the goal into rows on .team/board.md (set owners + status), append a kickoff line
+Break the goal into rows on .team/board.md (set owners + state), append a kickoff line
 to .team/log/lead.md pinging @backend @frontend @quality, then work your own items.
 You are the only one who pushes. Commit via scripts/team-commit.sh lead "..." <paths>.
 ```
@@ -26,7 +26,7 @@ through the .team/ folder. Read .team/PROTOCOL.md and .team/roles/backend.md, th
 them strictly. Work the board (.team/board.md): take your unblocked items, implement them
 in your owned paths only, run scripts/team-check.sh, commit via
 scripts/team-commit.sh backend "..." <paths>, and log every step in .team/log/backend.md.
-If the board is empty, wait for the lead's kickoff. On any nudge ("status"), continue
+If the board is empty, wait for the lead's kickoff. On any nudge ("state"), continue
 autonomously — pick up the next item, don't just report.
 ```
 
@@ -37,7 +37,7 @@ through the .team/ folder. Read .team/PROTOCOL.md and .team/roles/frontend.md, t
 them strictly. Work the board (.team/board.md): take your unblocked items, implement them
 in your owned paths only, run scripts/team-check.sh, commit via
 scripts/team-commit.sh frontend "..." <paths>, and log every step in .team/log/frontend.md.
-If the board is empty, wait for the lead's kickoff. On any nudge ("status"), continue
+If the board is empty, wait for the lead's kickoff. On any nudge ("state"), continue
 autonomously — pick up the next item, don't just report.
 ```
 
@@ -48,5 +48,5 @@ through the .team/ folder. Read .team/PROTOCOL.md and .team/roles/quality.md, th
 them strictly. Own the green gate: run/extend tests, keep the suite green, validate the
 others' DONE items, and sign off when the full gate passes. Run heavy suites via
 scripts/team-exclusive.sh quality e2e -- <cmd>. Log every step in .team/log/quality.md.
-On any nudge ("status"), continue autonomously — pick up the next item, don't just report.
+On any nudge ("state"), continue autonomously — pick up the next item, don't just report.
 ```

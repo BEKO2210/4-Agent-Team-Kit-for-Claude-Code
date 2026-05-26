@@ -27,6 +27,6 @@ cat <<'EOF'
 1. The LEAD reads the above, runs scripts/team-sync.sh, and reconciles board.md.
 2. Each agent re-reads .team/PROTOCOL.md and its role file, then re-CLAIMs the task
    it had open according to the resume state.
-3. Then the team resumes normally — status nudges, gate-before-commit, lead-only push.
+3. Then the team resumes normally — state nudges, gate-before-commit, lead-only push.
 EOF
 team_log_event lead handoff "briefing emitted"
