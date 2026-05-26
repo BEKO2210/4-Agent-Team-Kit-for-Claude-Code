@@ -10,7 +10,7 @@ Koordination liegt in einem `.team/`-Ordner aus Markdown und einer Handvoll POSI
 
 <p>
   <a href="https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/actions/workflows/gate.yml"><img alt="Gate workflow state" src="https://img.shields.io/github/actions/workflow/status/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/gate.yml?label=gate"></a>
-  <a href="LICENSE"><img alt="Lizenz: Private Use" src="https://img.shields.io/badge/Lizenz-Private%20Use-e8a33d"></a>
+  <a href="LICENSE"><img alt="Lizenz: MIT" src="https://img.shields.io/badge/Lizenz-MIT-2ea043"></a>
   <img alt="Gebaut für Claude Code" src="https://img.shields.io/badge/f%C3%BCr-Claude%20Code-5b8cff">
   <img alt="Core-Abhängigkeiten: keine" src="https://img.shields.io/badge/Core%20Deps-0-2ea043">
   <img alt="GUI: Node.js" src="https://img.shields.io/badge/GUI-Node.js-3c873a">
@@ -80,7 +80,7 @@ und die Agenten bleiben in ihrer Spur, serialisieren ihre Commits, committen nie
 | 🖥️ | **Optionale Live-Konsole** | Eine kleine lokale Web-UI (`gui/`) führt alle vier Sessions in einem Fenster mit einer Live-Vitals-Leiste. |
 | 🔌 | **Optionaler MCP-Server** | `mcp/` exponiert den Team-Zustand (Board, Logs, Memory, Health, Metriken) als read-only MCP-Ressourcen für jeden MCP-Client. |
 | 🧬 | **Typisierter State** | `schema/team-state.schema.json` ist der maschinen-validierbare Vertrag, den `/state`, der MCP-Server und `team-snapshot.sh` einhalten. |
-| 🧪 | **In CI getestet** | Eine eigenständige Bash-Test-Suite (`tests/run.sh`, aktuell 77 Checks) läuft bei jedem Push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml). |
+| 🧪 | **In CI getestet** | Eine eigenständige Bash-Test-Suite (`tests/run.sh`, aktuell 87 Checks) läuft bei jedem Push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml). |
 
 ## Vorschau
 
@@ -118,7 +118,7 @@ $EDITOR .team/roles/*.md          # die Globs jeder Lane an dein Repo anpassen
 **3. Skripte verifizieren**
 
 ```bash
-bash tests/run.sh                 # die Test-Suite (aktuell 77 Checks); muss grün sein
+bash tests/run.sh                 # die Test-Suite (aktuell 87 Checks); muss grün sein
 scripts/team-health.sh            # gibt einen Health-Report aus
 ```
 
@@ -216,19 +216,19 @@ flowchart TB
 ├─ mcp/                   # optionaler read-only MCP-Server
 ├─ examples/              # gearbeitete Beispiele (Todo-CLI etc.)
 ├─ .github/workflows/     # GitHub Actions Gate
-├─ tests/run.sh           # Bash-Test-Suite (aktuell 77 Checks)
+├─ tests/run.sh           # Bash-Test-Suite (aktuell 87 Checks)
 ├─ docs/console.png       # GUI-Screenshot
 ├─ PROMPTS.md             # die 4 Copy-Paste-Prompts
 ├─ ROADMAP.md             # phasierter Plan + Stand
 ├─ CHANGELOG.md           # Versionshistorie
-└─ LICENSE                # Private Use
+└─ LICENSE                # MIT
 ```
 
 ## Qualität & Sicherheit
 
 - **Continuous Integration** — jeder Push führt [`.github/workflows/gate.yml`](.github/workflows/gate.yml)
   aus: `bash -n` + `shellcheck -S warning` + die volle Test-Suite auf Ubuntu.
-- **Tests** — `bash tests/run.sh` läuft 77 sandboxed Checks gegen die echten Skripte; keine
+- **Tests** — `bash tests/run.sh` läuft 87 sandboxed Checks gegen die echten Skripte; keine
   Test-Framework-Abhängigkeit. `mcp/test.js` führt 12 zusätzliche MCP-Smoke-Tests.
 - **Nebenläufigkeits-Sicherheit** — Locks nutzen ein atomares `mkdir`-Verzeichnis mit
   PID-Liveness-Erkennung und atomarem rename-Break; zwei Agenten können nie denselben Lock
@@ -265,10 +265,11 @@ Designgründen außen vor — siehe [`ROADMAP.md`](ROADMAP.md).
 
 ## Beitragen
 
-Dies ist ein persönliches Projekt unter einer Private-Use-Lizenz (siehe [Lizenz](#lizenz)),
-daher nicht für allgemeine Verbreitung geöffnet. Es gibt noch keine `CONTRIBUTING.md`. Bei
-Bug-Fixes oder Ideen: bitte zuerst ein Issue zur Diskussion öffnen. Vor jeder Änderung das
-Gate grün haben:
+Beiträge sind willkommen. Bei größeren Änderungen bitte erst ein Issue öffnen, damit wir
+uns auf die Form einigen. Der ausführliche Contributor-Guide steht in
+[`CONTRIBUTING.md`](CONTRIBUTING.md); das Projekt hat einen
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) und eine [`SECURITY.md`](SECURITY.md), die
+erklärt, wie man Schwachstellen vertraulich meldet. Vor jedem PR das Gate grün haben:
 
 ```bash
 bash scripts/team-check.sh
@@ -276,6 +277,9 @@ bash scripts/team-check.sh
 
 ## Lizenz
 
-**Private Use** — private, nicht-kommerzielle Nutzung erlaubt; Weitergabe oder
-kommerzielle Nutzung benötigt vorherige schriftliche Erlaubnis. Copyright © 2026 Belkis
-Aslani (BEKO2210). Volltext in [`LICENSE`](LICENSE).
+[MIT](LICENSE) — Copyright © 2026 Belkis Aslani (BEKO2210). Frei nutzbar, auch
+kommerziell.
+
+**Kommerzieller Support.** Der Maintainer bietet kommerziellen Support, Custom-Integrationen,
+Dual-Licensing für Einbettungen sowie Beratung zu Multi-Agent-Workflows an. Für eine Anfrage
+ein Issue öffnen oder den Kanal aus [`SECURITY.md`](SECURITY.md) nutzen.

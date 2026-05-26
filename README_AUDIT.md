@@ -20,8 +20,8 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 - The build badge is a **live** Shields badge wired to `.github/workflows/gate.yml`. It
   reflects the latest gate run on the default branch (`main`); during this PR it may show
   "no state" on `main` until the workflow has run there post-merge.
-- The "58 checks" count in prose is accurate at the time of writing. New scripts may
-  raise it later; the badge does not encode the number.
+- The check count in prose ("87 checks at last count") is accurate at write time. The
+  badge does not encode the number, so adding new tests does not require a README edit.
 - Privacy is described as local/file-based because the kit only reads and writes files in
   the repo; there is no network/telemetry component in the core scripts.
 
@@ -34,17 +34,31 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 - **Badges** — all five are static `img.shields.io/badge/...` URLs (render regardless of
   repo visibility); no dynamic or CI badges are used.
 - **Commands** — every command is derived from real files: setup (`.team/`, `scripts/`),
-  the gate (`scripts/team-check.sh`), the suite (`bash tests/run.sh`, 45 checks), the
+  the gate (`scripts/team-check.sh`), the suite (`bash tests/run.sh`, currently 87 checks), the
   helper scripts (each exists in `scripts/`), and the GUI (`node gui/server.js`, port 4173
   per `gui/README.md`).
 - **Hero SVG** — rendered headless to confirm it displays correctly.
 
 ## Honest gaps (stated as "Planned" or omitted in the README)
 
-- No `SECURITY.md`, `CONTRIBUTING.md`, or `CODE_OF_CONDUCT.md` → not linked; the README
-  states the security-reporting path and the private-use contribution policy in prose.
-- No published package (npm/PyPI/etc.) and no live demo → no such badges or links.
+- No published package (npm / PyPI / etc.) and no live demo → no such badges or links.
 
 ## Open TODOs (optional follow-ups)
 
-- Consider a `SECURITY.md` and a `CONTRIBUTING.md` if the license is ever relaxed.
+- GitHub-UI items (repository topics & description, Discussions, custom social preview)
+  — these can't be set from a commit and remain on the maintainer's checklist.
+- Tag `v0.1.0` on `main` after this PR merges, then publish a GitHub Release.
+
+## Resolved since the first audit
+
+- License moved from "Private Use" to **MIT** in v0.1.0; commercial-use note added to
+  the README. Roadmap item 7.1 closed.
+- `SECURITY.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` now present and linked from
+  the README.
+- The previous "tests — N checks" rot was removed: the README badge is now the live
+  `gate` workflow status, and the prose count is the current truth at write time.
+- The `buildState()` / `teamStatus()` / `fold()` duplication identified in the audit is
+  gone — all three call sites now import `buildState` from `lib/state.mjs`, which is
+  governed by `schema/team-state.schema.json`.
+- The CI now runs `npm audit` (high) on `gui/` and `mcp/` lockfiles in addition to the
+  Bash gate.

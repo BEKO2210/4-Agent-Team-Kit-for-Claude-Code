@@ -18,8 +18,9 @@ trap cleanup EXIT
 
 new_sandbox() {
   SB="$(mktemp -d)"; SANDBOXES+=("$SB")
-  mkdir -p "$SB/scripts/lib" "$SB/.team/locks" "$SB/.team/log" "$SB/.team/roles"
+  mkdir -p "$SB/scripts/lib" "$SB/.team/locks" "$SB/.team/log" "$SB/.team/roles" "$SB/lib"
   cp "$SRC/scripts/lib/lock.sh" "$SB/scripts/lib/"
+  cp "$SRC/lib/state.mjs" "$SB/lib/"
   local s
   for s in team-commit team-exclusive team-health team-sync team-lint-log \
            team-resume team-lead-claim team-backup team-metrics team-worktrees \
@@ -257,6 +258,26 @@ run scripts/team-diff.sh A.json B.json
 assert '[ "$RC" -eq 0 ]'                                'diff: returns 0'
 assert 'printf "%s" "$OUT" | grep -q "#1"'             'diff: mentions changed task #1'
 assert 'printf "%s" "$OUT" | grep -qE "doing.*->.*done"' 'diff: reports state transition'
+
+echo "== team-init =="
+TARGET="$(mktemp -d)"; SANDBOXES+=("$TARGET")
+( cd "$TARGET" && git init -q && git config user.email t@t && git config user.name t \
+    && git config commit.gpgsign false && git commit -q --allow-empty -m init ) >/dev/null
+OUT="$(bash "$SRC/scripts/team-init.sh" "$TARGET" 2>&1)"; RC=$?
+assert '[ "$RC" -eq 0 ]'                                'init: returns 0'
+assert '[ -d "$TARGET/.team/roles" ]'                  'init: copies .team/'
+assert '[ -x "$TARGET/scripts/team-commit.sh" ]'       'init: scripts are executable'
+assert '[ -f "$TARGET/lib/state.mjs" ]'                'init: copies lib/state.mjs'
+assert 'grep -q ".team/locks/\*" "$TARGET/.gitignore"' 'init: extends .gitignore'
+OUT="$(bash "$SRC/scripts/team-init.sh" "$TARGET" 2>&1)"; RC=$?
+assert '[ "$RC" -ne 0 ]'                                'init: refuses to overwrite an existing .team/'
+
+echo "== team-demo =="
+OUT="$(bash "$SRC/scripts/team-demo.sh" 2>&1)"; RC=$?
+assert '[ "$RC" -eq 0 ]'                                'demo: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "team-health.sh"' 'demo: walks through team-health'
+assert 'printf "%s" "$OUT" | grep -q "team-sync.sh"'   'demo: walks through team-sync'
+assert 'printf "%s" "$OUT" | grep -q "team-snapshot.sh"' 'demo: walks through team-snapshot'
 
 echo "== JSON Schema sanity =="
 ( cd "$SRC" && node tests/validate-schema.mjs > /tmp/_schema.out 2>&1 ); rc=$?

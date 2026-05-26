@@ -10,7 +10,7 @@ folder of Markdown and a handful of POSIX shell scripts.
 
 <p>
   <a href="https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/actions/workflows/gate.yml"><img alt="Gate workflow state" src="https://img.shields.io/github/actions/workflow/status/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/gate.yml?label=gate"></a>
-  <a href="LICENSE"><img alt="License: Private Use" src="https://img.shields.io/badge/license-Private%20Use-e8a33d"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2ea043"></a>
   <img alt="Built for Claude Code" src="https://img.shields.io/badge/built%20for-Claude%20Code-5b8cff">
   <img alt="Core dependencies: zero" src="https://img.shields.io/badge/core%20deps-0-2ea043">
   <img alt="GUI: Node.js" src="https://img.shields.io/badge/GUI-Node.js-3c873a">
@@ -82,7 +82,7 @@ lanes, serialize their commits, and never ship red.
 | 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
 | 🔌 | **Optional MCP server** | `mcp/` exposes the team state (board, logs, memory, health, metrics) as read-only Model Context Protocol resources for any MCP client. |
 | 🧬 | **Typed state contract** | [`schema/team-state.schema.json`](schema/team-state.schema.json) is the machine-validatable contract honoured by `/state`, the MCP server, and `team-snapshot.sh`. Snapshots can be diffed with `team-diff.sh` to see exactly what moved between two points in time. |
-| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 77 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
+| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 87 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
 
@@ -99,15 +99,22 @@ Launch it locally with [`node gui/server.js`](#optional-the-gui) — see [Usage]
 > Prerequisites: **Bash**, **Git**, and the **[Claude Code](https://claude.com/claude-code) CLI**.
 > The optional GUI additionally needs **Node.js** (18+).
 
+**0. See the kit in action without installing Claude Code**
+
+```bash
+git clone https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code
+cd 4-Agent-Team-Kit-for-Claude-Code
+bash scripts/team-demo.sh         # 30-second self-running demo of the helpers
+```
+
 **1. Drop the kit into your repo**
 
 ```bash
-# from your repo root
-cp -r /path/to/this-kit/.team .team
-cp -r /path/to/this-kit/scripts/* scripts/
-chmod +x scripts/team-*.sh scripts/lib/*.sh
-printf '\n.team/locks/*\n.team/log/events.log\n.team/state/\n.team/backups/\n.team/metrics.md\n' >> .gitignore
+# one-command install (from inside the kit's directory)
+bash scripts/team-init.sh /path/to/your/repo
 ```
+
+Or copy by hand if you prefer — `scripts/team-init.sh` is short and self-documenting.
 
 **2. Point the gate and lanes at your project**
 
@@ -119,7 +126,7 @@ $EDITOR .team/roles/*.md          # point each lane's globs at YOUR repo
 **3. Verify the scripts work**
 
 ```bash
-bash tests/run.sh                 # the script test suite (77 checks at last count); all should pass
+bash tests/run.sh                 # the script test suite (87 checks at last count); all should pass
 scripts/team-health.sh            # prints a team-health report
 ```
 
@@ -161,6 +168,8 @@ scripts/team-sections.sh                # per-section view (board.md "## name" h
 scripts/team-federate.sh <repo>...      # aggregate boards across multiple repos
 scripts/team-snapshot.sh [--save]       # capture full state as one JSON document (schema/)
 scripts/team-diff.sh A.json B.json      # diff two snapshots
+scripts/team-init.sh <target>           # one-command install into another repo
+scripts/team-demo.sh                    # 30-second self-running demo (no Claude Code needed)
 scripts/team-commit.sh --dry-run <role> "msg" <paths>   # run the gate + preview, don't commit
 ```
 
@@ -252,24 +261,26 @@ flowchart TB
 │  ├─ team-sections.sh    # per-section board view (sub-teams)
 │  ├─ team-federate.sh    # cross-repo aggregation for a meta-lead view
 │  ├─ team-snapshot.{sh,mjs} # capture full state as one JSON document
-│  └─ team-diff.{sh,mjs}     # diff two snapshots
+│  ├─ team-diff.{sh,mjs}     # diff two snapshots
+│  ├─ team-init.sh           # one-command install into another repo
+│  └─ team-demo.sh           # self-running demo of the helpers
 ├─ gui/                   # optional one-window web console (Node.js)
 ├─ mcp/                   # optional read-only MCP server (exposes .team/ as resources)
 ├─ schema/                # JSON Schema for the team state contract
 ├─ examples/              # worked examples (todo-cli, …)
 ├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
-├─ tests/run.sh           # Bash test suite (77 checks at last count)
+├─ tests/run.sh           # Bash test suite (87 checks at last count)
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
 ├─ ROADMAP.md             # phased plan + implementation state
-└─ LICENSE                # Private Use
+└─ LICENSE                # MIT
 ```
 
 ## Quality and security
 
 - **Continuous integration** — every push runs [`.github/workflows/gate.yml`](.github/workflows/gate.yml),
   which executes the full green gate (`bash -n` + `shellcheck` + the test suite) on Ubuntu.
-- **Tests** — `bash tests/run.sh` runs 77 sandboxed checks against the real scripts; no
+- **Tests** — `bash tests/run.sh` runs 87 sandboxed checks against the real scripts; no
   external test framework is required. `mcp/test.js` adds 12 MCP smoke checks.
 - **Green gate** — [`scripts/team-check.sh`](scripts/team-check.sh) syntax-checks every
   script (`bash -n`), runs `shellcheck -S warning` when available, and runs the test suite.
@@ -313,10 +324,11 @@ See [`ROADMAP.md`](ROADMAP.md) for the full phased plan, priorities, and rationa
 
 ## Contributing
 
-This is a personal project under a private-use license (see [License](#license)), so it is
-not open for general redistribution. There is no `CONTRIBUTING.md` yet. If you have a fix or
-an idea, please open an issue first to discuss it. Before proposing any change, make sure the
-gate is green:
+Contributions are welcome. Please open an issue first for anything non-trivial so we can
+agree on the shape of the change. The full contributor guide lives in
+[`CONTRIBUTING.md`](CONTRIBUTING.md); the project ships with a
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) and a [`SECURITY.md`](SECURITY.md) that
+explains how to report vulnerabilities privately. Before opening a PR, run the gate:
 
 ```bash
 bash scripts/team-check.sh
@@ -324,9 +336,9 @@ bash scripts/team-check.sh
 
 ## License
 
-**Private Use** — personal, non-commercial use is permitted; distribution or commercial use
-requires prior written permission. Copyright © 2026 Belkis Aslani (BEKO2210). Full terms in
-[`LICENSE`](LICENSE).
+[MIT](LICENSE) — Copyright © 2026 Belkis Aslani (BEKO2210). Use it freely, including
+commercially. Commercial support, custom integrations and dual-licensing for embedded
+use are available — see [`COMMERCIAL.md`](COMMERCIAL.md).
 
 ## Acknowledgements
 

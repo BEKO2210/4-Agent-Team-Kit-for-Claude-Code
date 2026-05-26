@@ -17,48 +17,14 @@ import {
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { buildState, listRoles, readFileSafe } from "../lib/state.mjs";
 
 const REPO_DIR = process.env.REPO_DIR || process.cwd();
 const TEAM_DIR = path.join(REPO_DIR, ".team");
 const SCRIPTS_DIR = path.join(REPO_DIR, "scripts");
 
-const readFileSafe = (p, fallback = "") => { try { return fs.readFileSync(p, "utf8"); } catch { return fallback; } };
-const mtimeMs = (p) => { try { return fs.statSync(p).mtimeMs; } catch { return 0; } };
-
-function listRoles() {
-  let files = [];
-  try { files = fs.readdirSync(path.join(TEAM_DIR, "roles")); } catch { return []; }
-  return files
-    .filter((f) => f.endsWith(".md") && !f.startsWith("_"))
-    .map((f) => f.replace(/\.md$/, ""))
-    .sort();
-}
-
-function buildState() {
-  const counts = { todo: 0, doing: 0, blocked: 0, done: 0, total: 0 };
-  const tasks = [];
-  for (const line of readFileSafe(path.join(TEAM_DIR, "board.md")).split("\n")) {
-    if (!/^\s*\|/.test(line) || /----/.test(line)) continue;
-    const c = line.split("|").map((s) => s.trim());
-    const id = c[1];
-    if (!/^\d+$/.test(id)) continue;
-    const state = (c[4] || "").toLowerCase();
-    counts.total++;
-    if (counts[state] !== undefined) counts[state]++;
-    tasks.push({ id, task: c[2] || "", owner: (c[3] || "").replace(/[@\s]/g, "").toLowerCase(), state });
-  }
-  const now = Date.now();
-  const ACTIVE = Number(process.env.TEAM_ACTIVE_SECS || 900);
-  const STALE = Number(process.env.TEAM_STALE_SECS || 1800);
-  const roles = listRoles().map((id) => {
-    const mt = mtimeMs(path.join(TEAM_DIR, "log", id + ".md"));
-    const ageSec = mt ? Math.round((now - mt) / 1000) : -1;
-    let state = "no-log";
-    if (ageSec >= 0) state = ageSec < ACTIVE ? "active" : ageSec < STALE ? "idle" : "stale";
-    return { id, ageSec, state };
-  });
-  return { generatedAt: new Date().toISOString(), repoDir: REPO_DIR, counts, tasks, roles };
-}
+const state = () => buildState({ repoDir: REPO_DIR });
+const teamRoles = () => listRoles(TEAM_DIR);
 
 function runScript(name) {
   try {
@@ -85,7 +51,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  const logs = listRoles().map((r) => ({
+  const logs = teamRoles().map((r) => ({
     uri: `team://log/${r}`,
     name: `Log: ${r}`,
     description: `.team/log/${r}.md — append-only event stream`,
@@ -97,7 +63,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
   const u = req.params.uri;
   let text, mimeType;
-  if (u === "team://state") { text = JSON.stringify(buildState(), null, 2); mimeType = "application/json"; }
+  if (u === "team://state") { text = JSON.stringify(state(), null, 2); mimeType = "application/json"; }
   else if (u === "team://board")    { text = readFileSafe(path.join(TEAM_DIR, "board.md"),    "(no board.md)");    mimeType = "text/markdown"; }
   else if (u === "team://memory")   { text = readFileSafe(path.join(TEAM_DIR, "memory.md"),   "(no memory.md)");   mimeType = "text/markdown"; }
   else if (u === "team://protocol") { text = readFileSafe(path.join(TEAM_DIR, "PROTOCOL.md"), "(no PROTOCOL.md)"); mimeType = "text/markdown"; }
@@ -122,7 +88,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
   const name = req.params.name;
-  if (name === "team_state")      return { content: [{ type: "text", text: JSON.stringify(buildState(), null, 2) }] };
+  if (name === "team_state")      return { content: [{ type: "text", text: JSON.stringify(state(), null, 2) }] };
   if (name === "refresh_metrics") return { content: [{ type: "text", text: runScript("team-metrics.sh") }] };
   throw new Error(`unknown tool: ${name}`);
 });
