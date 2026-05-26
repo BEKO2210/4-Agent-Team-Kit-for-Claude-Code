@@ -1,9 +1,13 @@
 # ROADMAP — 4-Agent Team Kit for Claude Code
 
-> Diese Roadmap übersetzt die externen KI-Reviews (Gesamtnote **8.5/10**) in einen
-> konkreten, umsetzbaren Plan. Jeder Punkt nennt **Problem → Lösung → betroffene Dateien
-> → Akzeptanzkriterien → Aufwand**, damit das Team (oder ein einzelner Agent) ihn direkt
-> in `board.md`-Zeilen überführen kann.
+> Diese Roadmap übersetzt die externen KI-Reviews in einen konkreten, umsetzbaren Plan.
+> Zwei Quellen flossen ein:
+> 1. ein informelles Praxis-Review (Gesamtnote **8.5/10**),
+> 2. ein akademisches Technical Review als PDF (Gesamt **7.6/10**; Architektur 8, Implementierung 9,
+>    Innovation 8, Doku 7, Produktionsreife 6) mit expliziter Prioritätentabelle.
+>
+> Jeder Punkt nennt **Problem → Lösung → betroffene Dateien → Akzeptanzkriterien → Aufwand**,
+> damit das Team (oder ein einzelner Agent) ihn direkt in `board.md`-Zeilen überführen kann.
 >
 > **Leitprinzip bleibt:** dateibasierte Koordination, keine externe Infrastruktur,
 > Git als Konsens-Mechanismus. Jede Erweiterung muss optional und abschaltbar sein –
@@ -32,6 +36,15 @@
 5. Lizenz bremst Adoption → **Phase 7**
 6. Skripte: kein Dry-Run, kein Logging außerhalb `.team/log/` → **Phase 0**
 
+**Zusätzlich aus dem akademischen PDF-Review** (Abschnitte 6.2/8.2)
+- **W1 — Keine Fehlertoleranz bei Agentenausfällen:** ein `doing`-Task eines abgestürzten Agenten wird nie zurückgesetzt → **Phase 1 (Stale-Task)**
+- **W2 — Manuelle Board-Synchronisation (PDF: „Kritisch"):** kein Konsistenzmechanismus Board↔Logs → **Phase 1 (Board-Sync-Watchdog)**
+- **W3 — Keine dynamische Rekonfiguration:** Rollen statisch → **Phase 4**
+- **W4 — Keine semantische Kommunikation:** Handoffs sind formloser Text → **Phase 4 (Handoff-Schema)**
+- **W5 — Git als Single Point of Failure:** keine Backup-/Redundanz-Strategie → **Phase 2 (Backup)**
+- **MCP-Integration** (PDF: „Mittel"): Interoperabilität mit externen Tools → **Phase 5**
+- **Fehlende akademische Konstrukte** (BDI, Contract Net, Partial Global Planning, Org Self-Design) → **Anhang A (optionaler Backlog, bewusst YAGNI)**
+
 ---
 
 ## Phasen-Überblick
@@ -39,13 +52,14 @@
 | Phase | Thema | Ziel | Geschätzter Aufwand |
 |-------|-------|------|---------------------|
 | **0** | Fundament & Quick Wins | Skripte robuster, sicheres Testen | S (1–2 Tage) |
-| **1** | Robustheit & Selbstheilung | Health-Check, Auto-Resume, Deadlock-Erkennung | M |
-| **2** | Isolation & Resilienz | Worktrees als Option/Default, Fallback-Lead | M–L |
+| **1** | Robustheit & Selbstheilung | Board-Sync-Watchdog, Stale-Task, Health-Check, Auto-Resume, Deadlock | M |
+| **2** | Isolation & Resilienz | Worktrees, Fallback-Lead, Backup des Koordinationszustands | M–L |
 | **3** | Transparenz & Metriken | Board-Metriken, Live-Status in der GUI | M |
-| **4** | Skalierbarkeit | Dynamische Rollen, Sub-Teams | L |
-| **5** | Integration & Automatisierung | GitHub Actions / Webhooks, Cross-Repo | L |
+| **4** | Skalierbarkeit & Kommunikation | Dynamische Rollen, Sub-Teams, strukturiertes Handoff-Schema | L |
+| **5** | Integration & Automatisierung | GitHub Actions / Webhooks, MCP, Cross-Repo | L |
 | **6** | Persistenz & Lernen | Run-übergreifender Speicher, Handoff | M–L |
 | **7** | Lizenz & Community | Adoption ermöglichen | S |
+| **A** | Anhang: akademischer Backlog | BDI, Contract Net, PGP, Org Self-Design (optional, YAGNI) | — |
 
 Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = groß (Woche+).
 
@@ -85,28 +99,43 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ---
 
-## Phase 1 — Robustheit & Selbstheilung (Review: „Kurzfristig")
+## Phase 1 — Robustheit & Selbstheilung (Review: „Kurzfristig" + PDF W1/W2)
 
-### 1.1 Health-Check für Agenten
+### 1.0 Board-Synchronisations-Watchdog ⭐ (PDF-Priorität: **Kritisch**)
+- **Problem (W2):** Der Lead pflegt `board.md` manuell aus den Logs. Vergisst er ein Update, driften Board und Logs auseinander → Inkonsistenz, die größte Praxis-Schwäche laut PDF.
+- **Lösung:** `scripts/team-sync.sh` parst `.team/log/*.md` (CLAIM/DONE/BLOCKED + #id) und vergleicht mit `board.md`. **Stufe 1 (sicher, empfohlen):** nur *Drift-Report* — meldet Zeilen, deren Status nicht zum jüngsten Log passt, nach `.team/log/events.log`. **Stufe 2 (opt-in):** der Lead lässt sich daraus einen Board-Patch vorschlagen; Schreibrecht bleibt beim Lead (One-writer-Regel bleibt intakt).
+- **Dateien:** neu `scripts/team-sync.sh`; `.team/roles/lead.md` (bei `status` zuerst `team-sync.sh` laufen lassen); `.team/PROTOCOL.md`
+- **Akzeptanz:** Ein `DONE #3` im Log, während Board #3 noch `doing` zeigt, erzeugt eine Drift-Meldung; nach Lead-Update ist die Meldung weg.
+- **Aufwand:** M
+- **Hinweis:** Bewusst **kein** Auto-Writer aufs Board als Default — das würde die „One writer per file"-Regel (Lead besitzt das Board) verletzen. Erkennung + Vorschlag, nicht stilles Überschreiben.
+
+### 1.1 Stale-Task-Erkennung (PDF-Priorität: **Hoch**)
+- **Problem (W1):** Stürzt ein Agent mit einem Item in `doing` ab, bleibt es ewig `doing`; kein Timeout setzt es zurück.
+- **Lösung:** `scripts/team-health.sh` (siehe 1.2) markiert Items, deren Owner seit > N Minuten (Default 30) keinen Log-Eintrag hat, als **stale** und meldet sie dem Lead zur Rücksetzung auf `blocked`/`todo`. Rücksetzen bleibt Lead-Aktion (Board-Ownership).
+- **Dateien:** `scripts/team-health.sh`; `.team/PROTOCOL.md` (Stale-Konvention)
+- **Akzeptanz:** Ein `doing`-Item ohne frischen Owner-Log nach 30 min erscheint im Health-Report als `stale`.
+- **Aufwand:** S (baut auf 1.2)
+
+### 1.2 Health-Check für Agenten (PDF-Priorität: **Mittel**)
 - **Problem:** Es ist nicht erkennbar, ob alle 4 Agenten noch aktiv sind („Single Point of Failure: Lead").
 - **Lösung:** `scripts/team-health.sh` wertet die `mtime`/letzte Zeile jedes `.team/log/*.md` aus und meldet pro Rolle `active` / `idle` / `stale` (z. B. >15 min ohne Eintrag). Optionaler Heartbeat: Agenten schreiben bei jedem `status`-Tick eine `tick`-Zeile.
 - **Dateien:** neu `scripts/team-health.sh`; Ergänzung in `.team/PROTOCOL.md` (Heartbeat-Konvention)
 - **Akzeptanz:** `scripts/team-health.sh` listet 4 Rollen mit Status; ein künstlich „altes" Log wird als `stale` markiert.
 - **Aufwand:** S–M
 
-### 1.2 Auto-Resume aus Git-History / Logs
+### 1.3 Auto-Resume aus Git-History / Logs
 - **Problem:** Bei Session-Ende/Crash geht der Kontext verloren; Board-Zustand muss manuell rekonstruiert werden.
 - **Lösung:** `scripts/team-resume.sh` parst `.team/log/*.md` (CLAIM/DONE/BLOCKED) + `git log`, erstellt einen **Resume-Report** (offene Items, letzte Proofs, wer woran war) für den Lead. Der Lead gleicht damit `board.md` ab.
 - **Dateien:** neu `scripts/team-resume.sh`; Ergänzung in `.team/roles/lead.md` (Erste Aktion: bei vorhandenen Logs erst `team-resume.sh`)
 - **Akzeptanz:** Nach simuliertem Abbruch reproduziert der Report die letzten offenen/erledigten Items korrekt.
 - **Aufwand:** M
 
-### 1.3 Deadlock-Erkennung (alle `blocked`)
+### 1.4 Deadlock-Erkennung (alle `blocked`)
 - **Problem:** Wenn alle Agenten `blocked` sind, steht das Team still, ohne dass es jemandem auffällt.
 - **Lösung:** `scripts/team-health.sh` erkennt „alle aktiven Items `blocked`" bzw. „kein DONE in N Minuten" und schreibt eine `⚠ deadlock`-Zeile nach `.team/log/events.log` + Hinweis an den Lead. (Reine Erkennung + Eskalation; keine automatische Auflösung.)
 - **Dateien:** `scripts/team-health.sh`; `.team/PROTOCOL.md` (Was tut der Lead bei Deadlock-Signal)
 - **Akzeptanz:** Board mit ausschließlich `blocked`-Zeilen erzeugt ein Deadlock-Signal.
-- **Aufwand:** S (aufbauend auf 1.1)
+- **Aufwand:** S (aufbauend auf 1.2)
 
 ---
 
@@ -127,6 +156,13 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 - **Akzeptanz:** Bei „Lead stale" dokumentiert ein zweiter Agent die Übernahme; ein `lead.lock` verhindert zwei gleichzeitige Leads.
 - **Aufwand:** M
 
+### 2.3 Backup/Redundanz des Koordinationszustands (PDF W5)
+- **Problem (W5):** Das gesamte Koordinationssystem hängt an Git. Eine Repo-Korruption oder ein Fremd-Force-Push auf den Branch ist fatal — kein Backup des `.team/`-Zustands.
+- **Lösung:** `scripts/team-backup.sh` schnappschießt `.team/` (board, logs, roles) als Tarball nach `.team/backups/<ts>.tgz` (gitignored) und/oder pusht periodisch auf einen zweiten Remote/Branch (`team-state-backup`). Der Lead ruft es vor riskanten Integrationen auf. Plus PROTOCOL-Hinweis: niemals `--force` auf den geteilten Branch ohne Absprache.
+- **Dateien:** neu `scripts/team-backup.sh`; `.gitignore` (`.team/backups/`); `.team/PROTOCOL.md` (Force-Push-Warnung + Restore-Schritt)
+- **Akzeptanz:** `team-backup.sh` erzeugt einen wiederherstellbaren Snapshot; ein Restore stellt board+logs exakt wieder her.
+- **Aufwand:** S–M
+
 ---
 
 ## Phase 3 — Transparenz & Metriken (Review: „Mittelfristig")
@@ -140,14 +176,14 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ### 3.2 Live-Status & Metriken in der GUI
 - **Problem:** Die GUI zeigt nur die 4 Terminals, keinen aggregierten Team-Status.
-- **Lösung:** Statusleiste in `gui/public/index.html`: Health (aus 1.1), Board-Fortschritt (done/total) und Kurz-Metriken (aus 3.1). `gui/server.js` liefert `/status` (parst `.team/`-Dateien) und pollt periodisch.
+- **Lösung:** Statusleiste in `gui/public/index.html`: Health (aus 1.2), Board-Fortschritt (done/total) und Kurz-Metriken (aus 3.1). `gui/server.js` liefert `/status` (parst `.team/`-Dateien) und pollt periodisch.
 - **Dateien:** `gui/server.js` (neuer `/status`-Endpoint), `gui/public/index.html` (Statusleiste)
 - **Akzeptanz:** GUI zeigt „3/7 done", Health-Punkte pro Rolle, aktualisiert sich automatisch.
 - **Aufwand:** M
 
 ---
 
-## Phase 4 — Skalierbarkeit (Review: „Langfristig")
+## Phase 4 — Skalierbarkeit & Kommunikation (Review: „Langfristig" + PDF W3/W4)
 
 ### 4.1 Dynamische / zusätzliche Rollen
 - **Problem:** Genau 4 statische Rollen; für DevOps/Security/Docs müssen Rollen manuell erweitert werden.
@@ -163,9 +199,18 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 - **Akzeptanz:** Ein Board mit 2 Gruppen + Sub-Leads ist eindeutig les- und delegierbar.
 - **Aufwand:** L (zuerst als dokumentiertes Muster, dann Tooling)
 
+### 4.3 Strukturiertes Handoff-Schema (PDF-Priorität: **Hoch**, W4)
+- **Problem (W4):** Cross-Domain-Handoffs (`@role <ask>`) sind formloser Text. Keine Typisierung, keine Validierung, komplexe Abhängigkeiten nur per Konvention — fehleranfällig.
+- **Lösung:** Leichtes, weiterhin menschenlesbares Markdown-Schema für Handoffs im Log, z. B.:
+  `HH:MM · backend · 🤝 HANDOFF → @frontend · #id · needs:<artefakt> · blocks:<id> · <beschreibung>`.
+  Optional `scripts/team-lint-log.sh`, das Handoff-Zeilen auf Pflichtfelder prüft (Ziel-Rolle, #id, `needs`/`blocks`). Bleibt Konvention + optionaler Linter — kein neues Nachrichtensystem (Philosophie!).
+- **Dateien:** `.team/PROTOCOL.md` (Handoff-Format spezifizieren), optional `scripts/team-lint-log.sh`, ggf. Aufruf im Green-Gate
+- **Akzeptanz:** Eine unvollständige Handoff-Zeile (ohne Ziel-Rolle oder #id) wird vom Linter beanstandet; ein valider Handoff passiert.
+- **Aufwand:** S–M
+
 ---
 
-## Phase 5 — Integration & Automatisierung (Review: „Langfristig")
+## Phase 5 — Integration & Automatisierung (Review: „Langfristig" + PDF MCP)
 
 ### 5.1 GitHub Actions bei Board-Änderungen
 - **Problem:** Keine Außenwirkung/CI-Trigger bei Fortschritt.
@@ -181,6 +226,14 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 - **Akzeptanz:** Zwei Repos teilen ein konsistentes Board-Abbild; Status ist zentral lesbar.
 - **Aufwand:** L
 
+### 5.3 MCP-Integration (PDF-Priorität: **Mittel**)
+- **Problem:** Keine standardisierte Schnittstelle zu externen Tools/Daten; das Kit ist eine geschlossene Insel.
+- **Lösung:** Optionaler, **read-first** MCP-Server, der den `.team/`-Zustand (Board, Logs, Health, Metriken) als MCP-Ressourcen/Tools exponiert — so können externe Agenten oder Dashboards den Teamstatus lesen (später ggf. Items anlegen). Strikt optional und additiv; das Kern-Kit bleibt zero-dependency.
+- **Dateien:** neu `mcp/` (eigenständiger Server, eigene `package.json`), `README.md` (Abschnitt „MCP, optional")
+- **Akzeptanz:** Ein MCP-Client kann Board + Health über den Server abfragen, ohne dass das Basis-Kit Abhängigkeiten erhält.
+- **Aufwand:** M–L
+- **Hinweis:** Bewusst getrennt vom Kern (eigenes Verzeichnis/Deps), damit die Zero-Dependency-Philosophie des Scaffolds erhalten bleibt.
+
 ---
 
 ## Phase 6 — Persistenz & Lernen (Review-Schwäche „keine Kontext-Persistenz")
@@ -194,8 +247,8 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ### 6.2 Sauberer Handoff zwischen Sessions/Instanzen
 - **Problem:** Kein definierter Übergabe-Mechanismus zwischen verschiedenen Claude-Instanzen.
-- **Lösung:** `scripts/team-handoff.sh` erzeugt ein Snapshot-Briefing (offene Items + `memory.md` + Resume-Report aus 1.2), das eine neue Instanz als Kontext bekommt.
-- **Dateien:** neu `scripts/team-handoff.sh` (nutzt 1.2 + 6.1)
+- **Lösung:** `scripts/team-handoff.sh` erzeugt ein Snapshot-Briefing (offene Items + `memory.md` + Resume-Report aus 1.3), das eine neue Instanz als Kontext bekommt.
+- **Dateien:** neu `scripts/team-handoff.sh` (nutzt 1.3 + 6.1)
 - **Akzeptanz:** Eine frische Instanz kann ausschließlich aus dem Briefing nahtlos weiterarbeiten.
 - **Aufwand:** M
 
@@ -216,19 +269,34 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 ## Priorisierung (empfohlene Reihenfolge)
 
 1. **Phase 0** komplett — billig, entlastet sofort und ist Fundament für alles Weitere.
-2. **1.1 Health-Check** + **1.3 Deadlock-Erkennung** — direkter Schmerz aus den Reviews.
-3. **1.2 Auto-Resume** + **6.1 Memory** — adressiert die größte konzeptionelle Lücke (Persistenz).
-4. **2.2 Fallback-Lead** — entschärft den Single Point of Failure.
-5. **3.1/3.2 Metriken & GUI-Status** — macht Fortschritt sichtbar, motiviert.
-6. **2.1 Worktrees** — echte Parallelität, sobald Bedarf besteht.
-7. **4.x Skalierbarkeit**, **5.x Integration** — wenn das Kit über kleine Projekte hinauswächst.
-8. **7.1 Lizenz** — jederzeit, aber nur durch den Eigentümer.
+2. **1.0 Board-Sync-Watchdog** + **1.1 Stale-Task** — die im PDF als *kritisch/hoch* bewerteten Lücken (Board↔Log-Drift, hängende `doing`-Tasks).
+3. **1.2 Health-Check** + **1.4 Deadlock-Erkennung** — direkter Schmerz aus beiden Reviews.
+4. **1.3 Auto-Resume** + **6.1 Memory** — adressiert die größte konzeptionelle Lücke (Persistenz).
+5. **4.3 Handoff-Schema** — PDF *hoch*; macht Cross-Domain-Übergaben zuverlässig.
+6. **2.2 Fallback-Lead** + **2.3 Backup** — entschärfen die Single-Points-of-Failure (Lead, Git).
+7. **3.1/3.2 Metriken & GUI-Status** — macht Fortschritt sichtbar, motiviert.
+8. **2.1 Worktrees** — echte Parallelität, sobald Bedarf besteht.
+9. **4.1/4.2 Skalierbarkeit**, **5.x Integration (inkl. MCP)** — wenn das Kit über kleine Projekte hinauswächst.
+10. **7.1 Lizenz** — jederzeit, aber nur durch den Eigentümer.
+11. **Anhang A** — nur falls akademische Vollständigkeit gewünscht ist (sonst bewusst weglassen).
 
 ### Aufwand/Wirkung-Matrix
 | | Geringer Aufwand | Hoher Aufwand |
 |---|---|---|
-| **Hohe Wirkung** | 0.1–0.4, 1.1, 1.3, 6.1 | 1.2, 2.1, 2.2, 3.x |
-| **Geringere Wirkung** | 7.1 | 4.2, 5.2 |
+| **Hohe Wirkung** | 0.1–0.4, 1.1, 1.2, 1.4, 4.3, 6.1 | 1.0, 1.3, 2.1, 2.2, 3.x |
+| **Geringere Wirkung** | 2.3, 7.1 | 4.1, 4.2, 5.2, 5.3 |
+
+### Mapping zur PDF-Prioritätentabelle (Abschnitt 8.2 / Tabelle 7)
+| PDF-Priorität | PDF-Empfehlung | Roadmap-Punkt |
+|---|---|---|
+| **Kritisch** | Automatische Board-Synchronisation | **1.0** Board-Sync-Watchdog |
+| **Hoch** | Stale-Task-Erkennung | **1.1** Stale-Task |
+| **Hoch** | Strukturierte Handoff-Formate | **4.3** Handoff-Schema |
+| **Mittel** | MCP-Integration | **5.3** MCP-Server |
+| **Mittel** | Health-Check-Script | **1.2** Health-Check |
+| **Niedrig** | Dynamische Rollenverwaltung | **4.1** Dynamische Rollen |
+| (W5, 6.2) | Backup/Redundanz des Zustands | **2.3** Backup |
+| (6.3) | BDI / Contract Net / PGP / Org Self-Design | **Anhang A** (optional) |
 
 ---
 
@@ -241,25 +309,50 @@ Diese Roadmap eignet sich, um das Kit **an sich selbst** zu erproben:
 - **Frontend:** GUI-Erweiterungen (`gui/server.js`, `gui/public/index.html`).
 - **Quality:** erweitert `scripts/team-check.sh` um Tests für die neuen Skripte (z. B. mit `bats`), validiert jede DONE-Zeile.
 
-Vorgeschlagener erster Meilenstein für `board.md`:
+Vorgeschlagener erster Meilenstein für `board.md` (deckt die PDF-Top-Prioritäten zuerst ab):
 
 ```
-| # | Task                                   | Owner    | Status | Notes                |
-| 1 | 0.3 lib/lock.sh extrahieren            | backend  | todo   | Basis für 0.1/0.2    |
-| 2 | 0.1 --dry-run in team-commit.sh        | backend  | todo   | nach #1              |
-| 3 | 0.2 events.log + 0.4 .gitignore        | backend  | todo   | nach #1              |
-| 4 | 1.1 team-health.sh                      | quality  | todo   | liest .team/log/*    |
-| 5 | 1.3 Deadlock-Signal in health          | quality  | todo   | nach #4              |
-| 6 | bats-Tests für neue Skripte            | quality  | todo   | erweitert team-check |
-| 7 | Doku: README + PROTOCOL aktualisieren  | lead     | todo   | nach #1–#6           |
+| #  | Task                                      | Owner    | Status | Notes                  |
+| 1  | 0.3 lib/lock.sh extrahieren               | backend  | todo   | Basis für 0.1/0.2      |
+| 2  | 0.1 --dry-run in team-commit.sh           | backend  | todo   | nach #1                |
+| 3  | 0.2 events.log + 0.4 .gitignore           | backend  | todo   | nach #1                |
+| 4  | 1.2 team-health.sh                         | quality  | todo   | liest .team/log/*      |
+| 5  | 1.1 Stale-Task-Erkennung in health         | quality  | todo   | nach #4 · PDF „hoch"   |
+| 6  | 1.4 Deadlock-Signal in health              | quality  | todo   | nach #4                |
+| 7  | 1.0 team-sync.sh (Board↔Log-Drift-Report)  | backend  | todo   | PDF „kritisch"         |
+| 8  | 4.3 Handoff-Schema in PROTOCOL + Linter    | quality  | todo   | PDF „hoch"             |
+| 9  | bats-Tests für neue Skripte               | quality  | todo   | erweitert team-check   |
+| 10 | Doku: README + PROTOCOL aktualisieren     | lead     | todo   | nach #1–#9             |
 ```
+
+---
+
+## Anhang A — Akademischer Backlog (optional, bewusst YAGNI)
+
+Das PDF (Abschnitt 6.3) listet etablierte Multi-Agenten-Konstrukte, die das Kit **bewusst nicht**
+hat. Das PDF selbst wertet diese Abwesenheit als YAGNI-konforme Designentscheidung. Sie stehen
+hier nur als optionaler Forschungs-Backlog — eine Umsetzung würde die Einfachheit (Kern-Stärke
+laut beiden Reviews) gefährden und sollte nur mit klarem Bedarf erfolgen.
+
+- **BDI-Modell (Belief–Desire–Intention):** explizite Ziel-/Absichtsrepräsentation pro Agent (heute implizit im letzten Log-Eintrag). Denkbar: ein `intent:`-Feld in der Log-Konvention.
+- **Contract Net Protocol:** dezentrale Task-Auktion statt zentraler Lead-Zuweisung. Widerspricht dem Lead-zentrierten Modell — nur bei sehr großen Teams sinnvoll.
+- **Partial Global Planning:** Abgleich lokaler Pläne mit globaler Koordination. Teilweise schon durch board+logs angenähert.
+- **Organizational Self-Design:** Team passt seine Struktur dynamisch an die Aufgabe an. Überschneidet sich mit 4.1/4.2 (dynamische Rollen/Sub-Teams).
+
+**Empfehlung:** nicht umsetzen, bis ein konkreter Anwendungsfall es erzwingt. In der Roadmap als
+Niedrigst-Priorität geführt.
 
 ---
 
 ## Hinweis zur Quelle dieser Roadmap
 
-Diese Roadmap basiert auf den in der Anfrage übermittelten KI-Review-Texten
-(Gesamtnote 8.5/10, inkl. Stärken/Schwächen und Kurz-/Mittel-/Langfrist-Vorschlägen).
-Eine **PDF war im Upload nicht enthalten** (nur das Profilbild kam an). Sobald die PDF
-nachgereicht wird, kann diese Roadmap um dort genannte, hier noch nicht erfasste Punkte
-ergänzt werden.
+Diese Roadmap konsolidiert **zwei** externe KI-Reviews:
+1. ein informelles Praxis-Review (Gesamt **8.5/10**) mit Kurz-/Mittel-/Langfrist-Vorschlägen;
+2. das akademische **PDF-Technical-Review** „4-Agent Team Kit for Claude Code" (Gesamt **7.6/10**),
+   inkl. Critical Assessment (W1–W5), fehlender Konstrukte (6.3) und der priorisierten
+   Empfehlungstabelle (8.2 / Tabelle 7).
+
+Beide Quellen sind vollständig eingearbeitet; die PDF-Prioritäten sind oben explizit gemappt
+(siehe „Mapping zur PDF-Prioritätentabelle"). Die durchgehende Leitlinie bleibt die von beiden
+Reviews gelobte Kern-Stärke: **radikale Einfachheit und Zero-Dependency** — jede Erweiterung ist
+additiv, optional und darf das „4 Terminals, ein Repo"-Erlebnis nicht verkomplizieren.
