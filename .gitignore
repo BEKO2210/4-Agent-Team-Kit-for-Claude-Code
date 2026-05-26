@@ -4,6 +4,7 @@
 .team/log/events.log
 .team/state/
 .team/backups/
+.team/snapshots/
 .team/metrics.md
 
 # OS / editor noise

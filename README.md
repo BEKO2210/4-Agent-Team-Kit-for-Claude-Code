@@ -20,7 +20,9 @@ folder of Markdown and a handful of POSIX shell scripts.
 <a href="#usage"><b>Usage</b></a> ·
 <a href="#architecture"><b>Architecture</b></a> ·
 <a href=".team/PROTOCOL.md"><b>Protocol</b></a> ·
-<a href="ROADMAP.md"><b>Roadmap</b></a>
+<a href="ROADMAP.md"><b>Roadmap</b></a> ·
+<a href="CHANGELOG.md"><b>Changelog</b></a> ·
+<a href="README.de.md"><b>Deutsch</b></a>
 
 </div>
 
@@ -79,7 +81,8 @@ lanes, serialize their commits, and never ship red.
 | 🌿 | **Stronger isolation (optional)** | `team-worktrees.sh` gives each agent its own Git worktree + branch; the lead integrates by merge. |
 | 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
 | 🔌 | **Optional MCP server** | `mcp/` exposes the team state (board, logs, memory, health, metrics) as read-only Model Context Protocol resources for any MCP client. |
-| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 67 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
+| 🧬 | **Typed state contract** | [`schema/team-state.schema.json`](schema/team-state.schema.json) is the machine-validatable contract honoured by `/state`, the MCP server, and `team-snapshot.sh`. Snapshots can be diffed with `team-diff.sh` to see exactly what moved between two points in time. |
+| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 77 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
 
@@ -116,7 +119,7 @@ $EDITOR .team/roles/*.md          # point each lane's globs at YOUR repo
 **3. Verify the scripts work**
 
 ```bash
-bash tests/run.sh                 # the script test suite (67 checks at last count); all should pass
+bash tests/run.sh                 # the script test suite (77 checks at last count); all should pass
 scripts/team-health.sh            # prints a team-health report
 ```
 
@@ -156,6 +159,8 @@ scripts/team-role.sh add <name> <globs> # add a runtime role + emit its start pr
 scripts/team-handoff.sh                 # produce a briefing for a fresh session
 scripts/team-sections.sh                # per-section view (board.md "## name" headings)
 scripts/team-federate.sh <repo>...      # aggregate boards across multiple repos
+scripts/team-snapshot.sh [--save]       # capture full state as one JSON document (schema/)
+scripts/team-diff.sh A.json B.json      # diff two snapshots
 scripts/team-commit.sh --dry-run <role> "msg" <paths>   # run the gate + preview, don't commit
 ```
 
@@ -245,11 +250,15 @@ flowchart TB
 │  ├─ team-role.sh        # add / list / remove team roles at runtime
 │  ├─ team-handoff.sh     # produce a briefing for a fresh Claude Code session
 │  ├─ team-sections.sh    # per-section board view (sub-teams)
-│  └─ team-federate.sh    # cross-repo aggregation for a meta-lead view
+│  ├─ team-federate.sh    # cross-repo aggregation for a meta-lead view
+│  ├─ team-snapshot.{sh,mjs} # capture full state as one JSON document
+│  └─ team-diff.{sh,mjs}     # diff two snapshots
 ├─ gui/                   # optional one-window web console (Node.js)
 ├─ mcp/                   # optional read-only MCP server (exposes .team/ as resources)
+├─ schema/                # JSON Schema for the team state contract
+├─ examples/              # worked examples (todo-cli, …)
 ├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
-├─ tests/run.sh           # Bash test suite (67 checks at last count)
+├─ tests/run.sh           # Bash test suite (77 checks at last count)
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
 ├─ ROADMAP.md             # phased plan + implementation state
@@ -260,8 +269,8 @@ flowchart TB
 
 - **Continuous integration** — every push runs [`.github/workflows/gate.yml`](.github/workflows/gate.yml),
   which executes the full green gate (`bash -n` + `shellcheck` + the test suite) on Ubuntu.
-- **Tests** — `bash tests/run.sh` runs 67 sandboxed checks against the real scripts; no
-  external test framework is required.
+- **Tests** — `bash tests/run.sh` runs 77 sandboxed checks against the real scripts; no
+  external test framework is required. `mcp/test.js` adds 12 MCP smoke checks.
 - **Green gate** — [`scripts/team-check.sh`](scripts/team-check.sh) syntax-checks every
   script (`bash -n`), runs `shellcheck -S warning` when available, and runs the test suite.
 - **Concurrency safety** — locks use an atomic `mkdir` directory with PID-liveness stale
@@ -294,6 +303,7 @@ Shipped in this repo:
 - [x] Optional read-only MCP server exposing coordination state (`mcp/`)
 - [x] Sub-team sections in the board (`team-sections.sh`)
 - [x] Cross-repo federation for multi-service teams (`team-federate.sh`)
+- [x] Typed state contract + snapshots & diff (`schema/`, `team-snapshot.sh`, `team-diff.sh`)
 
 All numbered roadmap milestones are shipped. The remaining backlog is the optional
 "academic" appendix (BDI / Contract Net / partial global planning / org self-design),
