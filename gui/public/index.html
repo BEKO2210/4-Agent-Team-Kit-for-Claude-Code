@@ -71,11 +71,21 @@
   .vitals { display:flex; align-items:center; gap:20px; padding:11px 18px;
             border-bottom:1px solid var(--border); background:rgba(10,14,22,.5); flex-wrap:wrap; }
   .pwrap { flex:1 1 260px; min-width:220px; }
-  .ptrack { height:9px; border-radius:6px; overflow:hidden; display:flex; background:#0a0f1a;
-            border:1px solid var(--border); }
-  .seg { height:100%; transition:width .5s cubic-bezier(.4,0,.2,1); }
-  .seg.done{background:linear-gradient(90deg,#3ed598,#54e6a8);} .seg.doing{background:var(--warn);}
-  .seg.blocked{background:var(--bad);} .seg.todo{background:#2a3550;}
+  .ptrack { height:11px; border-radius:7px; display:flex; gap:3px; background:transparent; }
+  .rseg { flex:1; position:relative; height:100%; border-radius:6px; overflow:hidden;
+          background:color-mix(in srgb, var(--accent) 12%, #0a0f1a);
+          border:1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.02); }
+  .rfill { position:absolute; inset:0 auto 0 0; height:100%; width:0%;
+           background:linear-gradient(90deg,
+             color-mix(in srgb, var(--accent) 70%, transparent),
+             var(--accent));
+           box-shadow:0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
+           transition:width .5s cubic-bezier(.4,0,.2,1); }
+  .rlabel { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+            font:700 9px var(--mono); letter-spacing:.6px; text-transform:uppercase;
+            color:rgba(255,255,255,.78); text-shadow:0 1px 1px rgba(0,0,0,.6);
+            pointer-events:none; mix-blend-mode:screen; }
   .pmeta { margin-top:6px; font:600 12px var(--mono); color:var(--muted); }
   .pmeta b { color:var(--fg); }
   .avitals { display:flex; gap:9px; flex-wrap:wrap; }
@@ -94,33 +104,63 @@
 
   /* ---------- grid of agent decks ---------- */
   #grid { flex:1; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
-          gap:12px; padding:14px 18px 18px; min-height:0; }
-  .card { --accent:var(--accent); display:flex; flex-direction:column; min-height:0; overflow:hidden;
+          gap:12px; padding:14px 18px 18px; min-height:0; min-width:0; }
+  .card { --accent:var(--accent); display:flex; flex-direction:column;
+          min-height:0; min-width:0; overflow:hidden;
           background:linear-gradient(180deg,var(--panel),var(--panel2));
           border:1px solid var(--border); border-radius:14px; position:relative;
-          box-shadow:0 18px 40px -28px rgba(0,0,0,.9); }
+          box-shadow:0 18px 40px -28px rgba(0,0,0,.9);
+          transition:border-color .18s, box-shadow .18s, transform .12s; cursor:pointer; }
   /* entrance is an enhancement only — cards stay visible if motion is reduced/disabled */
   @media (prefers-reduced-motion: no-preference) {
     .card { opacity:0; transform:translateY(10px); animation:rise .5s forwards; }
   }
   @keyframes rise { to { opacity:1; transform:none; } }
   .card::before { content:""; position:absolute; inset:0 0 auto 0; height:2px;
-                  background:linear-gradient(90deg,var(--accent),transparent 75%); opacity:.9; }
+                  background:linear-gradient(90deg,var(--accent),transparent 75%); opacity:.9;
+                  transition:height .18s, opacity .18s; z-index:2; }
   .card.live { box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent),
                           0 22px 50px -30px color-mix(in srgb,var(--accent) 60%,#000); }
+  .card.selected { border-color:var(--accent);
+                   box-shadow:0 0 0 2px var(--accent),
+                              0 0 32px -6px color-mix(in srgb, var(--accent) 70%, transparent),
+                              0 22px 50px -30px color-mix(in srgb, var(--accent) 70%, #000); }
+  .card.selected::before { height:4px; opacity:1; }
+  .card.attn { border-color:var(--warn);
+               box-shadow:0 0 0 2px var(--warn),
+                          0 0 28px -4px color-mix(in srgb, var(--warn) 70%, transparent);
+               animation:attnPulse 1.5s ease-in-out infinite; }
+  @keyframes attnPulse {
+    0%,100% { box-shadow:0 0 0 2px var(--warn),
+                         0 0 28px -4px color-mix(in srgb, var(--warn) 70%, transparent); }
+    50%     { box-shadow:0 0 0 2px var(--warn),
+                         0 0 4px -4px color-mix(in srgb, var(--warn) 40%, transparent); }
+  }
+  .card.selected.attn { border-color:var(--warn); }
   .card h2 { margin:0; padding:10px 13px; display:flex; align-items:center; gap:9px;
              font:700 13px var(--mono); letter-spacing:.3px; border-bottom:1px solid var(--border);
-             color:var(--fg); background:rgba(255,255,255,.012); }
+             color:var(--fg); background:rgba(255,255,255,.012); flex:none; }
   .card h2 .tag { color:var(--accent); }
   .card h2 .dot { width:9px; height:9px; border-radius:50%; background:var(--dim); flex:none; transition:.2s; }
   .card h2 .dot.on { background:var(--accent); box-shadow:0 0 10px color-mix(in srgb,var(--accent) 70%,transparent); }
   .card h2 .dot.off { background:var(--bad); }
+  .card h2 .selbadge { font:700 9px var(--mono); letter-spacing:.6px; padding:2px 6px;
+                       border-radius:5px; color:#06121f; background:var(--accent);
+                       opacity:0; transition:opacity .18s; }
+  .card.selected h2 .selbadge { opacity:1; }
+  .card h2 .attnbadge { font:700 9px var(--mono); letter-spacing:.6px; padding:2px 6px;
+                        border-radius:5px; color:#1a1300; background:var(--warn);
+                        display:none; animation:badgeBlink 1s steps(2) infinite; }
+  .card.attn h2 .attnbadge { display:inline-block; }
+  @keyframes badgeBlink { 50% { opacity:.45; } }
   .spacer { flex:1; }
   .icon-btn { font:600 11px var(--mono); color:var(--muted); background:transparent; cursor:pointer;
               border:1px solid var(--border2); border-radius:7px; padding:5px 9px; transition:.15s; }
   .icon-btn:hover { color:var(--fg); border-color:var(--accent); }
 
-  .term { flex:1; min-height:0; padding:6px 8px; }
+  .term { flex:1; min-height:0; min-width:0; padding:4px 6px; overflow:hidden;
+          background:#0a0f1a; }
+  .term .xterm, .term .xterm-viewport, .term .xterm-screen { width:100% !important; }
   .foot { border-top:1px solid var(--border); padding:8px; display:flex; flex-direction:column; gap:7px; }
   .msgrow { display:flex; gap:7px; }
   .msg { flex:1; min-width:0; background:#070b13; color:var(--fg); border:1px solid var(--border2);
@@ -150,9 +190,7 @@
 
   <section class="vitals">
     <div class="pwrap">
-      <div class="ptrack" id="ptrack">
-        <span class="seg done"></span><span class="seg doing"></span><span class="seg blocked"></span><span class="seg todo"></span>
-      </div>
+      <div class="ptrack" id="ptrack"></div>
       <div class="pmeta" id="pmeta">board — waiting for .team/board.md…</div>
     </div>
     <div class="avitals" id="avitals"></div>
@@ -160,7 +198,7 @@
 
   <main id="grid"></main>
   <div class="legend">
-    <b>tip:</b> click into any panel to type directly · Enter sends the message box · vitals refresh from <b>.team/</b> every 3s
+    <b>tip:</b> click any panel to select it · the top bar shows per-role progress (lead · backend · frontend · quality) · cards pulse <b>yellow</b> when an agent looks like it's waiting for input
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
@@ -175,12 +213,27 @@
     const human = (s) => s < 0 ? "—" : s < 60 ? s + "s" : s < 3600 ? Math.round(s/60) + "m" : Math.round(s/3600) + "h";
 
     const terms = {};
-    let ws, cfg;
+    let ws, cfg, selectedId = null;
+
+    // Heuristic: terminal output that suggests the agent is waiting for user input.
+    const ATTN_RE = /\(y\/n\)|\[y\/n\]|\(yes\/no\)|\[yes\/no\]|press enter to continue|press any key|❯ \w|⟶ \w|do you want to|are you sure|\? [^\n]{0,80}(\(|:)|continue\?|confirm\?/i;
 
     const send = (o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
-    const input = (id, d) => send({ t: "i", id, d });
+    const input = (id, d) => { clearAttention(id); send({ t: "i", id, d }); };
     const paste = (id, text) => input(id, "\x1b[200~" + text + "\x1b[201~"); // bracketed paste
     const flatten = (s) => (s || "").replace(/\s*\n\s*/g, " ").trim();
+
+    function selectCard(id) {
+      if (selectedId === id) return;
+      selectedId = id;
+      document.querySelectorAll(".card").forEach((c) => c.classList.toggle("selected", c.id === "card-" + id));
+      const t = terms[id]; if (t && t.term) { try { t.term.focus(); } catch {} }
+    }
+    function setAttention(id, on) {
+      const card = document.getElementById("card-" + id); if (!card) return;
+      card.classList.toggle("attn", !!on);
+    }
+    const clearAttention = (id) => setAttention(id, false);
 
     function sendPrompt(id) {
       const a = cfg.agents.find((x) => x.id === id); if (!a) return;
@@ -205,6 +258,8 @@
         card.innerHTML = `
           <h2><span class="dot" id="dot-${a.id}"></span>${a.label}
             <span class="tag">#${a.id}</span>
+            <span class="attnbadge" title="agent appears to be waiting for input">⚠ needs input</span>
+            <span class="selbadge">selected</span>
             <span class="spacer"></span>
             <button class="icon-btn" data-act="start" data-id="${a.id}" title="restart this agent">⟳ restart</button>
           </h2>
@@ -254,7 +309,10 @@
       window.addEventListener("resize", () => { clearTimeout(window._rt); window._rt = setTimeout(doFit, 150); });
       setTimeout(doFit, 350);
 
+      // Click anywhere on a card → mark it as selected.
       grid.addEventListener("click", (e) => {
+        const card = e.target.closest(".card");
+        if (card && card.id.startsWith("card-")) selectCard(card.id.slice("card-".length));
         const b = e.target.closest("button"); if (!b) return;
         const { id, act } = b.dataset;
         if (act === "enter") input(id, "\r");
@@ -274,16 +332,38 @@
         for (const a of cfg.agents) input(a.id, "state\r");
       });
 
+      // Auto-select the first agent so users can immediately see the selected style.
+      if (cfg.agents.length) selectCard(cfg.agents[0].id);
+
       connect();
       pollStatus(); setInterval(pollStatus, 3000);
     }
 
     function renderVitals(s) {
       const c = s.counts || {}, total = c.total || 0;
-      const pct = (n) => total ? (100 * (n || 0) / total) : 0;
-      const segs = document.querySelectorAll("#ptrack .seg");
-      segs[0].style.width = pct(c.done) + "%"; segs[1].style.width = pct(c.doing) + "%";
-      segs[2].style.width = pct(c.blocked) + "%"; segs[3].style.width = pct(c.todo) + "%";
+      const tasks = s.tasks || [];
+      const roleOrder = (cfg && cfg.agents ? cfg.agents.map((a) => a.id) : ["lead","backend","frontend","quality"]);
+
+      // per-role done/total derived from board tasks
+      const per = {};
+      for (const id of roleOrder) per[id] = { done: 0, total: 0 };
+      for (const t of tasks) {
+        if (!per[t.owner]) per[t.owner] = { done: 0, total: 0 };
+        per[t.owner].total++;
+        if (t.state === "done") per[t.owner].done++;
+      }
+
+      const ptrack = document.getElementById("ptrack");
+      ptrack.innerHTML = roleOrder.map((id) => {
+        const p = per[id], pct = p.total ? Math.round(100 * p.done / p.total) : 0;
+        const accent = accentFor(id);
+        const tip = `${id}: ${p.done}/${p.total} done`;
+        return `<div class="rseg" style="--accent:${accent}" title="${tip}" data-role="${id}">
+                  <div class="rfill" style="width:${pct}%"></div>
+                  <div class="rlabel">${id}${p.total ? ` ${p.done}/${p.total}` : ""}</div>
+                </div>`;
+      }).join("");
+
       document.getElementById("pmeta").innerHTML = total
         ? `<b>${c.done || 0}/${total}</b> done · ${c.doing || 0} doing · ${c.blocked || 0} blocked · ${c.todo || 0} todo`
         : "board — no tasks yet";
@@ -302,10 +382,15 @@
       ws.onclose = () => { dot.className = "pulse off"; txt.textContent = "reconnecting…"; setTimeout(connect, 1500); };
       ws.onmessage = (ev) => {
         const m = JSON.parse(ev.data);
-        if (m.t === "o" && terms[m.id]) terms[m.id].term.write(m.d);
-        else if (m.t === "started") setLive(m.id, true);
+        if (m.t === "o" && terms[m.id]) {
+          terms[m.id].term.write(m.d);
+          // Heuristic: when an agent writes a confirmation/input prompt, highlight the card.
+          // Only flag the *non-selected* cards so the focused one doesn't pulse at you.
+          if (ATTN_RE.test(m.d) && m.id !== selectedId) setAttention(m.id, true);
+        }
+        else if (m.t === "started") { setLive(m.id, true); setAttention(m.id, false); }
         else if (m.t === "exit") {
-          setLive(m.id, false);
+          setLive(m.id, false); setAttention(m.id, false);
           if (terms[m.id]) terms[m.id].term.write("\r\n\x1b[31m[process exited]\x1b[0m\r\n");
         }
       };
