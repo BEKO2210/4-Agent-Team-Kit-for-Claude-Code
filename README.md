@@ -92,6 +92,8 @@ it runs all four `claude` sessions in colour-coded panels and lets you chat + fi
 commands (Kickoff, `status`, Enter, `y`, Esc, ^C, restart) from buttons. A live **vitals
 strip** reads `.team/` every few seconds and shows board progress (done/doing/blocked/todo)
 and each agent's health (active/idle/stale) — so you see the whole team at a glance.
+
+![TEAM // CONSOLE — the optional one-window GUI](docs/console.png)
 ```bash
 cd gui && npm install && cd ..
 node gui/server.js            # → http://localhost:4173
