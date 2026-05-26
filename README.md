@@ -10,7 +10,7 @@ folder of Markdown and a handful of POSIX shell scripts.
 
 <p>
   <a href="https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/actions/workflows/gate.yml"><img alt="Gate workflow state" src="https://img.shields.io/github/actions/workflow/status/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/gate.yml?label=gate"></a>
-  <a href="LICENSE"><img alt="License: Private Use" src="https://img.shields.io/badge/license-Private%20Use-e8a33d"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2ea043"></a>
   <img alt="Built for Claude Code" src="https://img.shields.io/badge/built%20for-Claude%20Code-5b8cff">
   <img alt="Core dependencies: zero" src="https://img.shields.io/badge/core%20deps-0-2ea043">
   <img alt="GUI: Node.js" src="https://img.shields.io/badge/GUI-Node.js-3c873a">
@@ -262,7 +262,7 @@ flowchart TB
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
 ├─ ROADMAP.md             # phased plan + implementation state
-└─ LICENSE                # Private Use
+└─ LICENSE                # MIT
 ```
 
 ## Quality and security
@@ -313,10 +313,11 @@ See [`ROADMAP.md`](ROADMAP.md) for the full phased plan, priorities, and rationa
 
 ## Contributing
 
-This is a personal project under a private-use license (see [License](#license)), so it is
-not open for general redistribution. There is no `CONTRIBUTING.md` yet. If you have a fix or
-an idea, please open an issue first to discuss it. Before proposing any change, make sure the
-gate is green:
+Contributions are welcome. Please open an issue first for anything non-trivial so we can
+agree on the shape of the change. The full contributor guide lives in
+[`CONTRIBUTING.md`](CONTRIBUTING.md); the project ships with a
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) and a [`SECURITY.md`](SECURITY.md) that
+explains how to report vulnerabilities privately. Before opening a PR, run the gate:
 
 ```bash
 bash scripts/team-check.sh
@@ -324,9 +325,13 @@ bash scripts/team-check.sh
 
 ## License
 
-**Private Use** — personal, non-commercial use is permitted; distribution or commercial use
-requires prior written permission. Copyright © 2026 Belkis Aslani (BEKO2210). Full terms in
-[`LICENSE`](LICENSE).
+[MIT](LICENSE) — Copyright © 2026 Belkis Aslani (BEKO2210). Use it freely, including
+commercially.
+
+**Commercial support.** The maintainer is available for commercial support, custom
+integrations, dual-licensing arrangements for embedded use, and consulting on
+multi-agent workflows. Open an issue or reach out via the channel in
+[`SECURITY.md`](SECURITY.md) to start a conversation.
 
 ## Acknowledgements
 

@@ -1,34 +1,37 @@
-"use strict";
 // One-window control panel for the 4-agent Claude Code team.
 // Spawns one PTY per agent (claude, by default), bridges them to the browser over a
 // WebSocket, and serves the static UI. Agents run in REPO_DIR (default: cwd) so they
 // can read the .team/ files. Local only (binds 127.0.0.1).
+import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { buildState } from "../lib/state.mjs";
 
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 let pty;
 try {
-  pty = require("node-pty");
+  const m = await import("node-pty");
+  pty = m.default || m;
 } catch {
   console.error("\n[team-gui] node-pty is not installed.\n  cd gui && npm install\n");
   process.exit(1);
 }
+
 let WebSocketServer;
 try {
-  ({ WebSocketServer } = require("ws"));
+  ({ WebSocketServer } = await import("ws"));
 } catch {
   console.error("\n[team-gui] ws is not installed.\n  cd gui && npm install\n");
   process.exit(1);
 }
 
-const ROOT = __dirname;
 const REPO_DIR = process.env.REPO_DIR || process.cwd();
 const PORT = Number(process.env.PORT) || 4173;
 const AUTOSTART = process.env.AUTOSTART !== "0";
 
-const config = JSON.parse(fs.readFileSync(path.join(ROOT, "agents.json"), "utf8"));
+const config = JSON.parse(fs.readFileSync(path.join(HERE, "agents.json"), "utf8"));
 // Optional override so you can smoke-test without launching claude: TEST_CMD=bash
 if (process.env.TEST_CMD) {
   for (const a of config.agents) {
@@ -73,46 +76,7 @@ function startAgent(def) {
 }
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
-const PUBLIC = path.join(ROOT, "public");
-
-// --- live team state, derived from the .team/ files (board + per-agent log mtimes) ---
-const readFileSafe = (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return ""; } };
-const mtimeMs = (p) => { try { return fs.statSync(p).mtimeMs; } catch { return 0; } };
-
-function teamStatus() {
-  const teamDir = path.join(REPO_DIR, ".team");
-  const counts = { todo: 0, doing: 0, blocked: 0, done: 0, total: 0 };
-  const tasks = [];
-  for (const line of readFileSafe(path.join(teamDir, "board.md")).split("\n")) {
-    if (!/^\s*\|/.test(line) || /----/.test(line)) continue;
-    const c = line.split("|").map((s) => s.trim());
-    const id = c[1];
-    if (!/^\d+$/.test(id)) continue;
-    const state = (c[4] || "").toLowerCase();
-    counts.total++;
-    if (counts[state] !== undefined) counts[state]++;
-    tasks.push({ id, task: c[2] || "", owner: (c[3] || "").replace(/[@\s]/g, "").toLowerCase(), state });
-  }
-  const now = Date.now();
-  const ACTIVE = Number(process.env.TEAM_ACTIVE_SECS || 900);
-  const STALE = Number(process.env.TEAM_STALE_SECS || 1800);
-  const roles = [];
-  let roleFiles = [];
-  try {
-    roleFiles = fs.readdirSync(path.join(teamDir, "roles")).filter((f) => f.endsWith(".md") && !f.startsWith("_"));
-  } catch {
-    /* no roles dir */
-  }
-  for (const rf of roleFiles) {
-    const id = rf.replace(/\.md$/, "");
-    const mt = mtimeMs(path.join(teamDir, "log", id + ".md"));
-    const ageSec = mt ? Math.round((now - mt) / 1000) : -1;
-    let state = "no-log";
-    if (ageSec >= 0) state = ageSec < ACTIVE ? "active" : ageSec < STALE ? "idle" : "stale";
-    roles.push({ id, ageSec, state });
-  }
-  return { generatedAt: new Date().toISOString(), counts, tasks, roles };
-}
+const PUBLIC = path.join(HERE, "public");
 
 const server = http.createServer((req, res) => {
   const url = (req.url || "/").split("?")[0];
@@ -122,7 +86,7 @@ const server = http.createServer((req, res) => {
   }
   if (url === "/state") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify(teamStatus()));
+    return res.end(JSON.stringify(buildState({ repoDir: REPO_DIR })));
   }
   const rel = url === "/" ? "/index.html" : url;
   const file = path.join(PUBLIC, rel);

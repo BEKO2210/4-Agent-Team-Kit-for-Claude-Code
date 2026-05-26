@@ -18,8 +18,9 @@ trap cleanup EXIT
 
 new_sandbox() {
   SB="$(mktemp -d)"; SANDBOXES+=("$SB")
-  mkdir -p "$SB/scripts/lib" "$SB/.team/locks" "$SB/.team/log" "$SB/.team/roles"
+  mkdir -p "$SB/scripts/lib" "$SB/.team/locks" "$SB/.team/log" "$SB/.team/roles" "$SB/lib"
   cp "$SRC/scripts/lib/lock.sh" "$SB/scripts/lib/"
+  cp "$SRC/lib/state.mjs" "$SB/lib/"
   local s
   for s in team-commit team-exclusive team-health team-sync team-lint-log \
            team-resume team-lead-claim team-backup team-metrics team-worktrees \

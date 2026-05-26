@@ -317,13 +317,11 @@ Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.
 
 ## Phase 7 — Lizenz & Community (Review-Schwäche „Lizenz bremst Adoption")
 
-### 7.1 Lizenz-Strategie entscheiden
-- **Problem:** „Private use only" verhindert Verbreitung/kommerzielle Nutzung.
-- **Lösung:** Bewusste Entscheidung des Eigentümers (Belkis Aslani): Status quo behalten **oder** auf permissive Lizenz (z. B. MIT/Apache-2.0) bzw. duale Lizenz wechseln. Roadmap **empfiehlt** keinen Wechsel automatisch — sie macht die Option sichtbar.
-- **Dateien:** `LICENSE`, `README.md`
-- **Akzeptanz:** Dokumentierte, bewusste Entscheidung; falls Wechsel: konsistent in `LICENSE` + README.
-- **Aufwand:** S
-- **⚠️ Achtung:** Lizenzwechsel ist eine **Eigentümer-Entscheidung**, kein Agenten-Task. Nicht ohne ausdrückliche Freigabe ändern.
+### 7.1 Lizenz-Strategie entscheiden ✅ erledigt (v0.1.0)
+- **Entscheidung:** Wechsel zu **MIT License**. Eigentümer behält Copyright und kann
+  zusätzlich kommerziellen Support, Dual-Licensing für Einbettungen und Custom-Arbeit
+  anbieten (Hinweis im README).
+- **Dateien:** `LICENSE`, `README.md`, `README.de.md`, `CONTRIBUTING.md`, `CHANGELOG.md`.
 
 ---
 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "One-window control panel for the 4-agent Claude Code team",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
