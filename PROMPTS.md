@@ -8,8 +8,8 @@ Give the **actual task only to the LEAD** (terminal 1). The other three read the
 ## Terminal 1 — LEAD
 ```
 You are the LEAD agent in a 4-agent team that shares this repo and coordinates ONLY
-through the .team/ folder. Read .team/PROTOCOL.md and .team/roles/lead.md, then follow
-them strictly.
+through the .team/ folder. Read .team/PROTOCOL.md, .team/roles/lead.md and
+.team/memory.md, then follow them strictly.
 
 THE GOAL:
 <<< paste what you want the team to build/fix here >>>

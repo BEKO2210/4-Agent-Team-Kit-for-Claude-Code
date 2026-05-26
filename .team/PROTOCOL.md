@@ -67,6 +67,14 @@ If all your board items are `done`, no open `@you` handoff, and the gate is gree
 log `✅ <you> done — standing by` and idle until a new directive. **Quality** owns
 the final full-gate sign-off before the lead calls it shipped.
 
+## Resilience
+- **Memory:** `.team/memory.md` holds decisions that must survive across runs. The lead
+  curates it; everyone reads it at kickoff.
+- **Fallback lead:** if `team-health.sh` shows the lead `stale`, **quality** claims the
+  role via `team-lead-claim.sh` so integration/push never stalls. Exactly one acting lead.
+- **Backup:** `team-backup.sh` snapshots `.team/` so git is not the only copy of the
+  coordination state. Never force-push the shared branch without team agreement.
+
 ## Concurrency variants (pick one; shared-tree is the default)
 - **Shared tree (default):** all 4 in the same checkout; serialize via the commit
   lock. Simplest for "4 terminals, one repo".
