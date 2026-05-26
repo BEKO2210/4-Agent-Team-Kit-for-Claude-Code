@@ -7,7 +7,7 @@ State values: `todo` · `doing` · `blocked` · `done`.
 
 | #  | Task                                                              | Owner    | State | Notes |
 |----|-------------------------------------------------------------------|----------|-------|-------|
-| 1  | `test-site/` Doku + Verzeichnis-Skelett (README, Ordnerlayout)    | lead     | doing | Lead-Lane, Einstieg für alle |
+| 1  | `test-site/` Doku + Verzeichnis-Skelett (README, Ordnerlayout)    | lead     | done  | committed 4d0c68e — README + Layout |
 | 2  | HTML/CSS Landing + About + Kontakt (responsive, a11y-basics)      | frontend | todo  | `test-site/public/**`, `test-site/styles/**` |
 | 3  | Mini-Backend: statischer Server + `/api/hello` JSON-Endpoint      | backend  | todo  | `test-site/server/**` (Node http, keine Deps) |
 | 4  | Smoke-Test: Server startet, `/` und `/api/hello` antworten 200    | quality  | todo  | `test-site/tests/**`, hook in `tests/run.sh` |
