@@ -17,8 +17,11 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 
 - The project version is intentionally **not** badged. `gui/package.json` declares
   `1.0.0`, but that is the GUI sub-package only, not a release of the whole kit.
-- The "tests — 45 checks" badge is a **static** badge reflecting the suite at the time of
-  writing (`bash tests/run.sh`). It is not a live CI badge; CI is on the roadmap (5.1).
+- The build badge is a **live** Shields badge wired to `.github/workflows/gate.yml`. It
+  reflects the latest gate run on the default branch (`main`); during this PR it may show
+  "no status" on `main` until the workflow has run there post-merge.
+- The "58 checks" count in prose is accurate at the time of writing. New scripts may
+  raise it later; the badge does not encode the number.
 - Privacy is described as local/file-based because the kit only reads and writes files in
   the repo; there is no network/telemetry component in the core scripts.
 
@@ -38,13 +41,10 @@ A record of how the current `README.md` was produced, so its claims stay verifia
 
 ## Honest gaps (stated as "Planned" or omitted in the README)
 
-- No GitHub Actions workflow exists → **no CI badge**; CI is listed under Roadmap 5.1.
 - No `SECURITY.md`, `CONTRIBUTING.md`, or `CODE_OF_CONDUCT.md` → not linked; the README
   states the security-reporting path and the private-use contribution policy in prose.
 - No published package (npm/PyPI/etc.) and no live demo → no such badges or links.
 
 ## Open TODOs (optional follow-ups)
 
-- Add a GitHub Actions workflow that runs `bash tests/run.sh`, then swap the static tests
-  badge for a live build badge (Roadmap 5.1).
 - Consider a `SECURITY.md` and a `CONTRIBUTING.md` if the license is ever relaxed.

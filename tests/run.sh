@@ -22,7 +22,8 @@ new_sandbox() {
   cp "$SRC/scripts/lib/lock.sh" "$SB/scripts/lib/"
   local s
   for s in team-commit team-exclusive team-health team-sync team-lint-log \
-           team-resume team-lead-claim team-backup team-metrics team-worktrees; do
+           team-resume team-lead-claim team-backup team-metrics team-worktrees \
+           team-role team-handoff; do
     cp "$SRC/scripts/$s.sh" "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
   done
   # a passing gate inside the sandbox (so team-commit's gate succeeds in isolation)
@@ -157,6 +158,32 @@ assert '[ "$RC" -eq 0 ]'                                'metrics: returns 0'
 assert '[ -f "$SB/.team/metrics.md" ]'                 'metrics: writes metrics.md'
 assert 'grep -qi "Board progress" "$SB/.team/metrics.md"' 'metrics: reports board progress'
 assert 'printf "%s" "$OUT" | grep -q "backend"'        'metrics: per-role row for backend'
+
+echo "== team-role =="
+new_sandbox
+run scripts/team-role.sh add devops "infra/**" "deploy/**"
+assert '[ "$RC" -eq 0 ]'                                'role: add returns 0'
+assert '[ -f "$SB/.team/roles/devops.md" ]'            'role: creates roles/devops.md'
+assert '[ -f "$SB/.team/log/devops.md" ]'              'role: creates log/devops.md'
+assert 'grep -q "infra/" "$SB/.team/roles/devops.md"'  'role: records the globs'
+run scripts/team-role.sh add devops
+assert '[ "$RC" -ne 0 ]'                                'role: add refuses duplicate'
+run scripts/team-role.sh list
+assert 'printf "%s" "$OUT" | grep -q "devops"'         'role: list shows devops'
+run scripts/team-role.sh remove lead
+assert '[ "$RC" -ne 0 ]'                                'role: refuses to remove a core role'
+run scripts/team-role.sh remove devops
+assert '[ "$RC" -eq 0 ]'                                'role: remove returns 0'
+assert '[ ! -e "$SB/.team/roles/devops.md" ]'          'role: remove deletes the file'
+
+echo "== team-handoff =="
+new_sandbox
+printf '12:00 · backend · 🛠 CLAIM #1 — start\n' >> "$SB/.team/log/backend.md"
+run scripts/team-handoff.sh
+assert '[ "$RC" -eq 0 ]'                                'handoff: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "TEAM HANDOFF BRIEFING"' 'handoff: prints the briefing header'
+assert 'printf "%s" "$OUT" | grep -q "Throughput snapshot"' 'handoff: includes metrics section'
+assert 'printf "%s" "$OUT" | grep -q "resume state"'   'handoff: includes resume section'
 
 echo "== team-worktrees =="
 new_sandbox

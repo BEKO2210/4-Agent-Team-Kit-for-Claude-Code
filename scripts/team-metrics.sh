@@ -12,7 +12,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOARD=".team/board.md"
 OUT=".team/metrics.md"
 
-read -r total done <<<"$(awk -F'|' '
+read -r total dn <<<"$(awk -F'|' '
   /^[ \t]*\|/ && $0 !~ /----/ {
     id=$2; s=tolower($5); gsub(/^[ \t]+|[ \t]+$/, "", id); gsub(/^[ \t]+|[ \t]+$/, "", s)
     if (id ~ /^[0-9]+$/) { t++; if (s == "done") d++ }
@@ -34,7 +34,7 @@ metrics="$(awk -F'|' '
 {
   echo "# Team metrics — generated $(team_now)"
   echo
-  echo "Board progress: ${done:-0}/${total:-0} done"
+  echo "Board progress: ${dn:-0}/${total:-0} done"
   echo
   echo "| Role | Claimed | Done | Blocked |"
   echo "|------|---------|------|---------|"
@@ -46,4 +46,4 @@ metrics="$(awk -F'|' '
 } > "$OUT"
 
 cat "$OUT"
-team_log_event lead metrics "progress ${done:-0}/${total:-0}"
+team_log_event lead metrics "progress ${dn:-0}/${total:-0}"

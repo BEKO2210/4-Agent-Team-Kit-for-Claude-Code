@@ -26,8 +26,16 @@ case "$cmd" in
     ;;
   restore)
     file="${2:-}"
-    [ -n "$file" ] || file="$(ls -1t "$DIR"/*.tgz 2>/dev/null | head -n1)"
-    [ -n "$file" ] && [ -f "$file" ] || { echo "team-backup: no snapshot to restore" >&2; exit 1; }
+    if [ -z "$file" ]; then
+      # newest snapshot — globs sort lexicographically; timestamps are ISO-like so newest = last
+      shopt -s nullglob
+      tgzs=("$DIR"/*.tgz)
+      shopt -u nullglob
+      [ "${#tgzs[@]}" -gt 0 ] && file="${tgzs[-1]}"
+    fi
+    if [ -z "$file" ] || [ ! -f "$file" ]; then
+      echo "team-backup: no snapshot to restore" >&2; exit 1
+    fi
     tar xzf "$file"
     team_log_event lead backup "restore $file"
     echo "team-backup: ✅ restored $file"

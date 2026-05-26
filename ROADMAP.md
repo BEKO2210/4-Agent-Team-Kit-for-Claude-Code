@@ -67,7 +67,13 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 
 ## Umsetzungsstand (dieser Branch)
 
-✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 45 grün):
+✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 58 grün, CI grün):
+- **5.1** `.github/workflows/gate.yml` — GitHub Actions führt bei jedem Push das volle Gate aus
+  (`bash -n` + `shellcheck -S warning` + Test-Suite). Live-Badge im README.
+- **4.1** `team-role.sh add|list|remove` + `.team/roles/_template.md` — Rollen zur Laufzeit
+  hinzufügen/entfernen, mit generiertem Start-Prompt für die neue Rolle.
+- **6.2** `team-handoff.sh` — kombiniert `memory.md` + `team-resume.sh` + `team-metrics.sh` zu
+  einem paste-baren Briefing für eine frische Claude-Code-Session.
 - **2.1** `team-worktrees.sh` — `setup|list|sync|teardown`: pro Rolle ein eigener Worktree auf
   `team/<role>`-Branch; Lead integriert via `git merge`. Stärkere Isolation als Shared-Tree.
 - **0.3** `scripts/lib/lock.sh` — gehärtetes Locking: atomares `mkdir`-Lock-Verzeichnis,
@@ -90,8 +96,8 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 - **6.1** `.team/memory.md` (run-übergreifender Speicher) + Start-Prompts lesen ihn.
 - **Gate/Tests:** `team-check.sh` prüft `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` (39 Tests).
 
-⏭️ **Als Nächstes** (laut Priorisierung): 4.1 dynamische Rollen · 5.1 GitHub Actions ·
-5.3 MCP-Server · 6.2 Handoff-Skript zwischen Sessions · 4.2 Sub-Teams.
+⏭️ **Als Nächstes** (laut Priorisierung): 5.3 MCP-Server (read-only Status-Exposition) ·
+4.2 Sub-Teams · 5.2 Cross-Repo-Federation.
 
 > Design-Grundlage: kurze Recherche zu (a) sicherer Bash-Concurrency [mkdir/flock, TOCTOU,
 > `kill -0`], (b) Blackboard/Event-Sourcing [Logs als Event-Stream, Board als Projektion;
