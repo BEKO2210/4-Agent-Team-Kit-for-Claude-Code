@@ -59,7 +59,10 @@ function startAgent(def) {
   }
   const term = pty.spawn(def.cmd, def.args || [], {
     name: "xterm-256color",
-    cols: 100,
+    // Default wide enough to fit a typical 2×2 grid card (~130 visible cols) so
+    // first-screen output (Claude welcome, etc.) isn't truncated before the
+    // browser's FitAddon sends an accurate resize.
+    cols: 140,
     rows: 30,
     cwd: REPO_DIR,
     env: process.env,
