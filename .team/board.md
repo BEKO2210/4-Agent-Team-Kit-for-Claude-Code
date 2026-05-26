@@ -3,13 +3,19 @@
 The lead fills this from the human's goal and keeps it in sync with the logs.
 State values: `todo` · `doing` · `blocked` · `done`.
 
-| #  | Task                                   | Owner    | State | Notes |
-|----|----------------------------------------|----------|--------|-------|
-| 1  | _example: the lead splits the goal here_ | —        | todo   | —     |
+**Goal:** Test-Website unter `test-site/` — minimaler statischer Auftritt (Landing + About + Kontakt) mit kleinem Backend-Stub und Smoke-Test.
 
-## Milestones (optional grouping)
-- **M1** — …
-- **M2** — …
+| #  | Task                                                              | Owner    | State | Notes |
+|----|-------------------------------------------------------------------|----------|-------|-------|
+| 1  | `test-site/` Doku + Verzeichnis-Skelett (README, Ordnerlayout)    | lead     | doing | Lead-Lane, Einstieg für alle |
+| 2  | HTML/CSS Landing + About + Kontakt (responsive, a11y-basics)      | frontend | todo  | `test-site/public/**`, `test-site/styles/**` |
+| 3  | Mini-Backend: statischer Server + `/api/hello` JSON-Endpoint      | backend  | todo  | `test-site/server/**` (Node http, keine Deps) |
+| 4  | Smoke-Test: Server startet, `/` und `/api/hello` antworten 200    | quality  | todo  | `test-site/tests/**`, hook in `tests/run.sh` |
+
+## Milestones
+- **M1** — Skelett & Doku stehen (#1 done) → frontend & backend können parallel ziehen.
+- **M2** — Frontend + Backend lokal lauffähig (#2, #3 done).
+- **M3** — Quality-Smoke grün + Lead-Push (#4 done, sign-off).
 
 ## Conventions
 - Highest priority / unblocks-others first.
