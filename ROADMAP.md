@@ -67,7 +67,12 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 
 ## Umsetzungsstand (dieser Branch)
 
-✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 58 grün + 12 MCP-Smoke-Tests, CI grün):
+✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 67 grün + 12 MCP-Smoke-Tests, CI grün):
+- **5.2** `scripts/team-federate.sh <repo>...` — aggregiert Board-Zähler über mehrere Repos
+  zu einer Meta-Lead-Übersicht (eine Zeile pro Repo + TOTAL). Konvention, keine neue Infra.
+- **4.2** `scripts/team-sections.sh` + `## <name>`-Konvention in `board.md` — leichtgewichtige
+  Sub-Teams: Sektions-Überschriften gruppieren Tasks; das Tool meldet pro Sektion Zähler und
+  Owner-Verteilung. Vollständig rückwärtskompatibel (Board ohne Sektionen funktioniert weiter).
 - **5.3** `mcp/` — read-only MCP-Server (stdio) exponiert `.team/` als MCP-Ressourcen
   (`team://state|board|memory|protocol|health|metrics|log/<role>`) + Tools (`team_state`,
   `refresh_metrics`). Eigenes `package.json` (opt-in), Kern bleibt zero-deps. 12 Smoke-Tests.
@@ -99,8 +104,9 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 - **6.1** `.team/memory.md` (run-übergreifender Speicher) + Start-Prompts lesen ihn.
 - **Gate/Tests:** `team-check.sh` prüft `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` (39 Tests).
 
-⏭️ **Als Nächstes** (laut Priorisierung): 4.2 Sub-Teams (leichtgewichtige Hierarchien) ·
-5.2 Cross-Repo-Federation.
+⏭️ **Offen**: Alle nummerierten Roadmap-Punkte sind geshipt. Es bleibt nur der bewusst
+optionale **Anhang A** (BDI / Contract Net / Partial Global Planning / Org Self-Design) —
+der wird laut Design-Prinzip nur umgesetzt, wenn ein konkreter Anwendungsfall ihn erzwingt.
 
 > Design-Grundlage: kurze Recherche zu (a) sicherer Bash-Concurrency [mkdir/flock, TOCTOU,
 > `kill -0`], (b) Blackboard/Event-Sourcing [Logs als Event-Stream, Board als Projektion;
