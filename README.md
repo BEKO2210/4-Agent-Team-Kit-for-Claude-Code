@@ -13,11 +13,17 @@ prompts, and hand the lead your goal. No task is baked in — you supply it at k
   board.md             the single work board (the lead owns it)
   roles/{lead,backend,frontend,quality}.md   each agent's lane + definition-of-done
   log/{lead,backend,frontend,quality}.md     per-agent append-only logs (no write races)
+  log/events.log       script-written event trail (lock/commit/health — gitignored)
   locks/               runtime locks (git.lock, build.lock, …)
 scripts/
+  lib/lock.sh          shared atomic-mkdir lock + event-log helpers (sourced, not run)
   team-commit.sh       lock → gate → stage only your paths → commit "[role] …" → unlock
   team-check.sh        the green gate (EDIT for your stack)
   team-exclusive.sh    run build/e2e/etc. under a lock so heavy ops never collide
+  team-health.sh       agent liveness + stale-task + deadlock report
+  team-sync.sh         board↔log drift report (logs are authority; lead reconciles)
+  team-lint-log.sh     validate structured @role handoff lines
+tests/run.sh           self-contained test suite for the scripts (no framework needed)
 PROMPTS.md             the 4 copy-paste terminal prompts
 ```
 
@@ -44,6 +50,20 @@ printf '\n.team/locks/*.lock\n' >> .gitignore  # don't commit runtime locks
 Stay in your lane · write only your own files · commit only via `team-commit.sh`
 (never `git add -A`) · green before commit · only the lead pushes · heavy ops under a lock ·
 log every step · `status` = do the next thing, don't just report.
+
+## Coordination helpers
+```bash
+scripts/team-health.sh                  # who's active/idle/stale · stale tasks · deadlock
+scripts/team-sync.sh                    # where board.md drifts from the logs (lead fixes it)
+scripts/team-sync.sh --strict           # exit 1 on drift (use in a gate)
+scripts/team-lint-log.sh                # check @role handoff lines are well-formed
+scripts/team-commit.sh --dry-run <role> "msg" <paths>   # run gate + preview, don't commit
+bash tests/run.sh                       # run the script test suite
+```
+Heartbeats and stale-task timeouts are tunable: `TEAM_ACTIVE_SECS` (default 900) and
+`TEAM_STALE_SECS` (default 1800). Lock/commit/health events are appended to
+`.team/log/events.log` (gitignored). Tip: wire `team-health.sh` into a Claude Code
+`SessionStart` hook to auto-report team state when an agent (re)starts.
 
 ## Why it's built this way (lessons baked in)
 - **Per-agent logs** instead of one shared log → no "file changed since read" write races.
