@@ -67,22 +67,29 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 
 ## Umsetzungsstand (dieser Branch)
 
-✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 22 grün):
+✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 39 grün):
 - **0.3** `scripts/lib/lock.sh` — gehärtetes Locking: atomares `mkdir`-Lock-Verzeichnis,
   PID-Liveness (`kill -0`) statt mtime-Race, atomarer Stale-Break via `rename`,
   Release nur bei eigener Ownership. `team-commit.sh`/`team-exclusive.sh` nutzen die Lib.
 - **0.1** `team-commit.sh --dry-run` (bzw. `TEAM_DRY_RUN=1`) — Gate + Vorschau ohne Commit.
 - **0.2** zentrales `.team/log/events.log` (Lock-/Commit-/Health-Events).
-- **0.4** `.gitignore` deckt Laufzeit-Artefakte ab (`locks/*`, `events.log`, `state/`, `backups/`).
+- **0.4** `.gitignore` deckt Laufzeit-Artefakte ab (`locks/*`, `events.log`, `state/`, `backups/`, `metrics.md`).
 - **1.0** `team-sync.sh` — Board↔Log-Drift-Report (Logs = Autorität, Board = Projektion; meldet, schreibt nicht).
 - **1.1** Stale-Task-Erkennung in `team-health.sh` (`doing` + Owner zu lange still).
 - **1.2** `team-health.sh` — Liveness pro Rolle (Heartbeat = letzter Log-Append).
+- **1.3** `team-resume.sh` — Resume-Briefing aus Logs + Git-History nach Crash/Neustart.
 - **1.4** Deadlock-Erkennung (alles `blocked`, nichts `doing`/`todo`).
+- **2.2** `team-lead-claim.sh` + Fallback-Lead-Konvention (genau ein aktiver Lead via `.team/state/lead`).
+- **2.3** `team-backup.sh` — Snapshot/Restore des `.team/`-Zustands (Schutz vor „Git = einzige Kopie").
+- **3.1** `team-metrics.sh` — Durchsatz pro Rolle + Board-Fortschritt → `.team/metrics.md`.
+- **3.2** GUI Live-Status: `/status`-Endpoint + neue „TEAM // CONSOLE"-Oberfläche
+  (Vitals-Leiste mit Board-Fortschritt + Agent-Health, farbcodierte Decks, Motion) via `frontend-design`-Skill.
 - **4.3** Handoff-Schema in `PROTOCOL.md` + `team-lint-log.sh`.
-- **Gate/Tests:** `team-check.sh` prüft jetzt `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` neu.
+- **6.1** `.team/memory.md` (run-übergreifender Speicher) + Start-Prompts lesen ihn.
+- **Gate/Tests:** `team-check.sh` prüft `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` (39 Tests).
 
-⏭️ **Als Nächstes** (laut Priorisierung): 1.3 Auto-Resume · 2.2 Fallback-Lead · 2.3 Backup ·
-3.x Metriken/GUI · 2.1 Worktrees · 6.1 Memory.
+⏭️ **Als Nächstes** (laut Priorisierung): 2.1 Worktrees (`team-worktrees.sh`) · 4.1 dynamische Rollen ·
+5.1 GitHub Actions · 5.3 MCP-Server · 6.2 Handoff-Skript zwischen Sessions.
 
 > Design-Grundlage: kurze Recherche zu (a) sicherer Bash-Concurrency [mkdir/flock, TOCTOU,
 > `kill -0`], (b) Blackboard/Event-Sourcing [Logs als Event-Stream, Board als Projektion;

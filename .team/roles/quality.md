@@ -18,3 +18,9 @@
 ## On `status`
 Run the gate, hunt gaps, add coverage, validate others' `DONE` items, keep main
 green. Use `team-exclusive.sh quality e2e -- <cmd>` so heavy runs don't collide.
+
+## Fallback lead
+If `scripts/team-health.sh` reports the **lead** as `stale`, you are the designated
+stand-in. Claim it with `scripts/team-lead-claim.sh quality` (a `.team/state/lead`
+record keeps exactly one acting lead), then integrate + push until the lead returns.
+Log the takeover; hand back when the lead is active again.

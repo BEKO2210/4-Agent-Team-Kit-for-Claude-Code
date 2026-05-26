@@ -21,7 +21,8 @@ new_sandbox() {
   mkdir -p "$SB/scripts/lib" "$SB/.team/locks" "$SB/.team/log" "$SB/.team/roles"
   cp "$SRC/scripts/lib/lock.sh" "$SB/scripts/lib/"
   local s
-  for s in team-commit team-exclusive team-health team-sync team-lint-log; do
+  for s in team-commit team-exclusive team-health team-sync team-lint-log \
+           team-resume team-lead-claim team-backup team-metrics; do
     cp "$SRC/scripts/$s.sh" "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
   done
   # a passing gate inside the sandbox (so team-commit's gate succeeds in isolation)
@@ -115,6 +116,47 @@ assert '[ "$RC" -eq 0 ]'                                'lint: well-formed hando
 printf '12:01 · backend · 🤝 HANDOFF frontend do y\n' >> "$SB/.team/log/backend.md"
 run scripts/team-lint-log.sh .team/log/backend.md
 assert '[ "$RC" -ne 0 ]'                                'lint: malformed handoff fails'
+
+echo "== team-resume =="
+new_sandbox
+printf '12:00 · backend · 🛠 CLAIM #1 — start\n' >> "$SB/.team/log/backend.md"
+printf '12:30 · backend · ✅ DONE #1 — proof\n' >> "$SB/.team/log/backend.md"
+printf '12:05 · frontend · ⛔ BLOCKED #2 — @backend/api\n' >> "$SB/.team/log/frontend.md"
+run scripts/team-resume.sh
+assert '[ "$RC" -eq 0 ]'                                'resume: returns 0'
+assert 'printf "%s" "$OUT" | grep -q "#1"'             'resume: shows completed #1'
+assert 'printf "%s" "$OUT" | grep -q "#2"'             'resume: shows open #2'
+assert 'printf "%s" "$OUT" | grep -qi "Recent commits"' 'resume: includes git history'
+
+echo "== team-lead-claim =="
+new_sandbox
+run scripts/team-lead-claim.sh lead
+assert '[ "$RC" -eq 0 ]'                                'lead-claim: first claim ok'
+assert 'grep -q "^lead " "$SB/.team/state/lead"'       'lead-claim: records role'
+run scripts/team-lead-claim.sh quality
+assert '[ "$RC" -ne 0 ]'                                'lead-claim: fresh different role refused'
+run scripts/team-lead-claim.sh quality --force
+assert '[ "$RC" -eq 0 ]'                                'lead-claim: --force overrides'
+assert 'grep -q "^quality " "$SB/.team/state/lead"'    'lead-claim: --force updates holder'
+
+echo "== team-backup =="
+new_sandbox
+run scripts/team-backup.sh
+assert '[ "$RC" -eq 0 ]'                                'backup: create returns 0'
+assert 'ls "$SB"/.team/backups/*.tgz >/dev/null 2>&1'  'backup: writes a snapshot'
+( cd "$SB" && echo "| 9 | x | lead | done | — |" >> .team/board.md )
+run scripts/team-backup.sh restore
+assert '[ "$RC" -eq 0 ]'                                'backup: restore returns 0'
+assert '! grep -q "| 9 |" "$SB/.team/board.md"'        'backup: restore reverts the board'
+
+echo "== team-metrics =="
+new_sandbox
+printf '12:00 · backend · 🛠 CLAIM #1\n12:30 · backend · ✅ DONE #1\n' >> "$SB/.team/log/backend.md"
+run scripts/team-metrics.sh
+assert '[ "$RC" -eq 0 ]'                                'metrics: returns 0'
+assert '[ -f "$SB/.team/metrics.md" ]'                 'metrics: writes metrics.md'
+assert 'grep -qi "Board progress" "$SB/.team/metrics.md"' 'metrics: reports board progress'
+assert 'printf "%s" "$OUT" | grep -q "backend"'        'metrics: per-role row for backend'
 
 echo
 echo "tests: $pass passed, $fail failed"

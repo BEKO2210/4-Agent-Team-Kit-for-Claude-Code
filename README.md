@@ -56,14 +56,19 @@ log every step · `status` = do the next thing, don't just report.
 scripts/team-health.sh                  # who's active/idle/stale · stale tasks · deadlock
 scripts/team-sync.sh                    # where board.md drifts from the logs (lead fixes it)
 scripts/team-sync.sh --strict           # exit 1 on drift (use in a gate)
+scripts/team-resume.sh                  # rebuild state from logs + git after a crash/restart
+scripts/team-metrics.sh                 # throughput per role + board progress → .team/metrics.md
+scripts/team-backup.sh [restore [file]] # snapshot/restore .team/ (git isn't the only copy)
+scripts/team-lead-claim.sh <role>       # fallback-lead: record the acting lead
 scripts/team-lint-log.sh                # check @role handoff lines are well-formed
 scripts/team-commit.sh --dry-run <role> "msg" <paths>   # run gate + preview, don't commit
-bash tests/run.sh                       # run the script test suite
+bash tests/run.sh                       # run the script test suite (39 checks)
 ```
 Heartbeats and stale-task timeouts are tunable: `TEAM_ACTIVE_SECS` (default 900) and
 `TEAM_STALE_SECS` (default 1800). Lock/commit/health events are appended to
-`.team/log/events.log` (gitignored). Tip: wire `team-health.sh` into a Claude Code
-`SessionStart` hook to auto-report team state when an agent (re)starts.
+`.team/log/events.log` (gitignored). `.team/memory.md` carries decisions across runs.
+Tip: wire `team-health.sh` into a Claude Code `SessionStart` hook to auto-report team
+state when an agent (re)starts.
 
 ## Why it's built this way (lessons baked in)
 - **Per-agent logs** instead of one shared log → no "file changed since read" write races.
@@ -82,9 +87,11 @@ Heartbeats and stale-task timeouts are tunable: `TEAM_ACTIVE_SECS` (default 900)
 - **Push policy:** default is lead-only direct push to one branch; switch to PRs in `roles/lead.md`.
 
 ## GUI — one window instead of 4 terminals (optional)
-Don't want to hop between terminals? `gui/` is a tiny local web console: it runs all four
-`claude` sessions, shows each in its own panel, and lets you chat + fire the common
-commands (Kickoff, `status`, Enter, `y`, Esc, ^C, restart) from buttons.
+Don't want to hop between terminals? `gui/` is a tiny local web console ("TEAM // CONSOLE"):
+it runs all four `claude` sessions in colour-coded panels and lets you chat + fire the common
+commands (Kickoff, `status`, Enter, `y`, Esc, ^C, restart) from buttons. A live **vitals
+strip** reads `.team/` every few seconds and shows board progress (done/doing/blocked/todo)
+and each agent's health (active/idle/stale) — so you see the whole team at a glance.
 ```bash
 cd gui && npm install && cd ..
 node gui/server.js            # → http://localhost:4173
