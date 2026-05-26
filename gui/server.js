@@ -67,12 +67,12 @@ function startAgent(def) {
     cwd: REPO_DIR,
     env: process.env,
   });
-  const rec = { def, term, buf: "" };
+  const rec = { def, term, buf: "", alive: true };
   term.onData((d) => {
     rec.buf = (rec.buf + d).slice(-200000); // ~200KB scrollback replayed to new clients
     broadcast({ t: "o", id: def.id, d });
   });
-  term.onExit(({ exitCode }) => broadcast({ t: "exit", id: def.id, code: exitCode }));
+  term.onExit(({ exitCode }) => { rec.alive = false; broadcast({ t: "exit", id: def.id, code: exitCode }); });
   agents.set(def.id, rec);
   broadcast({ t: "started", id: def.id });
   console.log(`[team-gui] started '${def.id}' (${def.cmd}) in ${REPO_DIR}`);
@@ -110,7 +110,12 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocketServer({ server });
 wss.on("connection", (ws) => {
   clients.add(ws);
-  for (const [id, rec] of agents) ws.send(JSON.stringify({ t: "o", id, d: rec.buf }));
+  // Replay scrollback AND the current liveness state so late-joining clients
+  // see the correct online/offline indicators on each card.
+  for (const [id, rec] of agents) {
+    ws.send(JSON.stringify({ t: "o", id, d: rec.buf }));
+    ws.send(JSON.stringify({ t: rec.alive ? "started" : "exit", id }));
+  }
   ws.on("message", (raw) => {
     let m;
     try {
