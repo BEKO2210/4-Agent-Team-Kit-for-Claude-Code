@@ -6,7 +6,62 @@ package registry, so versions are git tags for now.
 
 ## [Unreleased]
 
-Nothing yet. This section will collect changes that land on `main` after the next tag.
+### Added — GUI ops-console refresh
+
+A multi-pass refresh of the optional `gui/` console, driven by feedback from a real
+session and informed by the UI/UX Pro Max + frontend-design Claude Skills.
+
+- **Per-role progress bars** in the top vitals strip — four stacked bars (lead /
+  backend / frontend / quality), each filled by that role's `done / total` ratio in
+  its own accent colour. Replaces the previous four state-coloured segments that
+  collapsed to nothing when their counts were zero.
+- **Selected & needs-input feedback** — clicking a card sets a bright accent ring +
+  `selected` badge; non-focused cards pulse warn-yellow with a `⚠ needs input` badge
+  when their terminal output matches common confirmation prompts (`(y/n)`,
+  "press enter", "do you want to…"). Cleared as soon as the user types into the card.
+- **Card hover lift, focus-visible rings, contrast bump** — Medium/High severity UX
+  guidelines (focus states for keyboard users, visible hover feedback,
+  contrast-readability).
+- **CTA-green Kickoff button** with a half-second pulse on click and an
+  auto-clearing Goal textarea, per the UX "Submit Feedback" guideline.
+- **Ops-console identity** — corner brackets on every card in the role colour (8 thin
+  lines via a single `::after` gradient grid), channel callsigns `CH·01 … CH·04`,
+  telemetry-style vital chips with role-accent borders, a brand subscript
+  `· LOCAL · N/4 CH · ONLINE | PARTIAL | STANDBY | OFFLINE ·` driven live by the
+  WebSocket + agent state, and a subtle CRT-scanline overlay on each terminal
+  (disabled under `prefers-reduced-motion`).
+- **Centred 4-bar equalizer activity meter** in every card header. Calm in idle,
+  bars animate at varied tempos while terminal output is flowing (debounced ~700ms
+  after silence), turn flat red when the PTY exits. Replaces the small left-edge
+  status dot.
+
+### Fixed — GUI
+
+- **Right-side cutoff** in the 2×2 grid — added `min-width:0` / `min-height:0` to the
+  grid items and forced `width:100%` on the xterm viewport so cards can shrink
+  cleanly and `FitAddon` sizes correctly.
+- **First-paint truncation** in terminals — server now spawns each PTY at
+  `cols: 140` (was `100`). The first screen (Claude welcome, `/init` prompts, etc.)
+  now fits the typical card width without an ellipsis before the browser's
+  `FitAddon` sends an exact resize.
+- **Late-joining clients showed agents as offline** — `gui/server.js` now tracks a
+  per-agent `alive` flag and replays both scrollback AND current liveness on each
+  new WebSocket connection.
+
+### Changed — typography & palette
+
+- Swapped UI font from Hanken Grotesk to **IBM Plex Sans** (paired with JetBrains
+  Mono, per the "Developer Mono" pairing). Single Google Fonts request.
+- Refreshed the slate-based palette (`bg #05080f`, `panel #0d1424`,
+  `border #1a2540`) and added a dedicated `--cta` token (emerald
+  `#22c55e + #34d399`) so the primary action reads distinctly from the blue
+  interactive accent used for selection / focus.
+
+### Tests
+
+- The Bash test suite now reports **88 passed** (was 87) after picking up the
+  `test-site` smoke harness added by the agents during a worked example. No protocol
+  or coordination-script behaviour changed.
 
 ## [0.1.0] — 2026-05-26 — Initial public preview (MIT)
 

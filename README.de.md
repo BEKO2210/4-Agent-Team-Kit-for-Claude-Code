@@ -77,18 +77,24 @@ und die Agenten bleiben in ihrer Spur, serialisieren ihre Commits, committen nie
 | ♻️ | **Crash-Recovery & Memory** | `team-resume.sh` rekonstruiert den Stand aus Logs + Git; `.team/memory.md` trägt Entscheidungen über Runs hinweg. |
 | 🛟 | **Resilienz** | Fallback-Lead (`team-lead-claim.sh`) und `.team/`-Snapshots (`team-backup.sh`) — ein hängender Lead oder ein schlechter Push ist nicht fatal. |
 | 🌿 | **Stärkere Isolation (optional)** | `team-worktrees.sh` gibt jedem Agenten einen eigenen Git-Worktree + Branch; der Lead integriert per Merge. |
-| 🖥️ | **Optionale Live-Konsole** | Eine kleine lokale Web-UI (`gui/`) führt alle vier Sessions in einem Fenster mit einer Live-Vitals-Leiste. |
+| 🖥️ | **Optionale Live-Konsole** | Eine kleine lokale Web-UI (`gui/`) führt alle vier Sessions in einem Fenster. Pro-Rolle-Progressbars, rollen-farbige Karten mit Corner-Brackets und Channel-Callsigns, ein mittiges Equalizer-Aktivitätsmeter, ein klarer „selected"-Ring auf der fokussierten Karte und ein pulsierender „⚠ needs input"-Badge wenn ein Agent auf eine Bestätigung wartet. |
 | 🔌 | **Optionaler MCP-Server** | `mcp/` exponiert den Team-Zustand (Board, Logs, Memory, Health, Metriken) als read-only MCP-Ressourcen für jeden MCP-Client. |
 | 🧬 | **Typisierter State** | `schema/team-state.schema.json` ist der maschinen-validierbare Vertrag, den `/state`, der MCP-Server und `team-snapshot.sh` einhalten. |
-| 🧪 | **In CI getestet** | Eine eigenständige Bash-Test-Suite (`tests/run.sh`, aktuell 87 Checks) läuft bei jedem Push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml). |
+| 🧪 | **In CI getestet** | Eine eigenständige Bash-Test-Suite (`tests/run.sh`, aktuell 88 Checks) läuft bei jedem Push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml). |
 
 ## Vorschau
 
 Die optionale GUI — **TEAM // CONSOLE** — zeigt alle vier Agenten in einem Fenster und
-eine Live-Vitals-Leiste (Board-Fortschritt + Health pro Agent), die `.team/` alle paar
+eine Live-Vitals-Leiste (Progress pro Rolle + Health pro Agent), die `.team/` alle paar
 Sekunden neu liest.
 
-![TEAM // CONSOLE: vier farbcodierte Agent-Decks plus Live-Vitals-Leiste](docs/console.png)
+![TEAM // CONSOLE: vier rollen-farbige Agent-Decks im 2×2-Grid, oben eine Pro-Rolle-Progressbar-Leiste, Channel-Callsigns und ein mittiges Equalizer-Aktivitätsmeter im Header jeder Karte](docs/console.png)
+
+Eine Detail-Sicht auf eine Karte — Corner-Brackets in der Rollen-Farbe,
+Channel-Callsign (`CH·01`), das mittige 4-Bar-Aktivitätsmeter das sich mit Live-Terminal-Output
+animiert, und ein „selected"-Badge wenn die Karte fokussiert ist:
+
+![Detail der selected Lead-Karte mit goldenen Corner-Brackets, dem CH·01-Callsign, dem selected-Badge und dem mittigen 4-Bar-Equalizer-Aktivitätsmeter mid-animation](docs/console-card.png)
 
 Lokal starten: [`node gui/server.js`](#optional-die-gui) — siehe [Nutzung](#nutzung).
 
@@ -118,7 +124,7 @@ $EDITOR .team/roles/*.md          # die Globs jeder Lane an dein Repo anpassen
 **3. Skripte verifizieren**
 
 ```bash
-bash tests/run.sh                 # die Test-Suite (aktuell 87 Checks); muss grün sein
+bash tests/run.sh                 # die Test-Suite (aktuell 88 Checks); muss grün sein
 scripts/team-health.sh            # gibt einen Health-Report aus
 ```
 
@@ -216,7 +222,7 @@ flowchart TB
 ├─ mcp/                   # optionaler read-only MCP-Server
 ├─ examples/              # gearbeitete Beispiele (Todo-CLI etc.)
 ├─ .github/workflows/     # GitHub Actions Gate
-├─ tests/run.sh           # Bash-Test-Suite (aktuell 87 Checks)
+├─ tests/run.sh           # Bash-Test-Suite (aktuell 88 Checks)
 ├─ docs/console.png       # GUI-Screenshot
 ├─ PROMPTS.md             # die 4 Copy-Paste-Prompts
 ├─ ROADMAP.md             # phasierter Plan + Stand
@@ -228,7 +234,7 @@ flowchart TB
 
 - **Continuous Integration** — jeder Push führt [`.github/workflows/gate.yml`](.github/workflows/gate.yml)
   aus: `bash -n` + `shellcheck -S warning` + die volle Test-Suite auf Ubuntu.
-- **Tests** — `bash tests/run.sh` läuft 87 sandboxed Checks gegen die echten Skripte; keine
+- **Tests** — `bash tests/run.sh` läuft 88 sandboxed Checks gegen die echten Skripte; keine
   Test-Framework-Abhängigkeit. `mcp/test.js` führt 12 zusätzliche MCP-Smoke-Tests.
 - **Nebenläufigkeits-Sicherheit** — Locks nutzen ein atomares `mkdir`-Verzeichnis mit
   PID-Liveness-Erkennung und atomarem rename-Break; zwei Agenten können nie denselben Lock

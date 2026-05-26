@@ -79,17 +79,23 @@ lanes, serialize their commits, and never ship red.
 | ♻️ | **Crash recovery & memory** | `team-resume.sh` rebuilds state from logs + Git; `.team/memory.md` carries decisions across runs. |
 | 🛟 | **Resilience** | Fallback-lead (`team-lead-claim.sh`) and `.team/` snapshots (`team-backup.sh`) so a stalled lead or a bad push isn't fatal. |
 | 🌿 | **Stronger isolation (optional)** | `team-worktrees.sh` gives each agent its own Git worktree + branch; the lead integrates by merge. |
-| 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
+| 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window. Per-role progress bars, role-coloured cards with corner brackets and channel callsigns, a centred equalizer-style activity meter, a clear "selected" ring on the focused card, and an auto-pulsing "⚠ needs input" badge when an agent looks like it's waiting for a confirmation. |
 | 🔌 | **Optional MCP server** | `mcp/` exposes the team state (board, logs, memory, health, metrics) as read-only Model Context Protocol resources for any MCP client. |
 | 🧬 | **Typed state contract** | [`schema/team-state.schema.json`](schema/team-state.schema.json) is the machine-validatable contract honoured by `/state`, the MCP server, and `team-snapshot.sh`. Snapshots can be diffed with `team-diff.sh` to see exactly what moved between two points in time. |
-| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 87 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
+| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 88 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
 
 The optional GUI — **TEAM // CONSOLE** — runs all four agents in one window and shows a live
-vitals strip (board progress and each agent's health) derived from `.team/`.
+vitals strip (per-role progress bars and per-agent health) derived from `.team/`.
 
-![TEAM // CONSOLE: four colour-coded agent terminals with a live vitals strip showing board progress and per-agent health](docs/console.png)
+![TEAM // CONSOLE: four role-coloured agent terminals in a 2×2 grid, a per-role progress bar strip on top, channel callsigns and a centred equalizer activity meter in each card header](docs/console.png)
+
+A closer look at one card — corner brackets in the role colour, channel callsign
+(`CH·01`), the centred 4-bar activity meter that animates with live terminal output,
+and a "selected" badge when the card is focused:
+
+![Detail of the selected Lead card showing gold corner brackets, the CH·01 callsign, the selected badge and the centred 4-bar equalizer activity meter mid-animation](docs/console-card.png)
 
 Launch it locally with [`node gui/server.js`](#optional-the-gui) — see [Usage](#usage).
 
@@ -126,7 +132,7 @@ $EDITOR .team/roles/*.md          # point each lane's globs at YOUR repo
 **3. Verify the scripts work**
 
 ```bash
-bash tests/run.sh                 # the script test suite (87 checks at last count); all should pass
+bash tests/run.sh                 # the script test suite (88 checks at last count); all should pass
 scripts/team-health.sh            # prints a team-health report
 ```
 
@@ -269,7 +275,7 @@ flowchart TB
 ├─ schema/                # JSON Schema for the team state contract
 ├─ examples/              # worked examples (todo-cli, …)
 ├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
-├─ tests/run.sh           # Bash test suite (87 checks at last count)
+├─ tests/run.sh           # Bash test suite (88 checks at last count)
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
 ├─ ROADMAP.md             # phased plan + implementation state
@@ -280,7 +286,7 @@ flowchart TB
 
 - **Continuous integration** — every push runs [`.github/workflows/gate.yml`](.github/workflows/gate.yml),
   which executes the full green gate (`bash -n` + `shellcheck` + the test suite) on Ubuntu.
-- **Tests** — `bash tests/run.sh` runs 87 sandboxed checks against the real scripts; no
+- **Tests** — `bash tests/run.sh` runs 88 sandboxed checks against the real scripts; no
   external test framework is required. `mcp/test.js` adds 12 MCP smoke checks.
 - **Green gate** — [`scripts/team-check.sh`](scripts/team-check.sh) syntax-checks every
   script (`bash -n`), runs `shellcheck -S warning` when available, and runs the test suite.
