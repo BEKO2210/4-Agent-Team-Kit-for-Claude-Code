@@ -27,8 +27,30 @@ each other if run at the same time. Wrap them so only one runs repo-wide:
   (`# · task · owner · status · notes`), sets owners, posts a kickoff line.
 - You **claim** an item: log `CLAIM #id` (lead reflects owner + `doing` on the board).
 - You **do** it in your paths → `team-commit.sh` → log `DONE #id — <proof>`.
-- **Handoff** cross-domain work: `@role <ask>` in your log; they pick it up next tick.
+- **Handoff** cross-domain work — use the structured form (see § Handoffs) so it can be tracked.
 - **Blocked?** Log `BLOCKED #id — @role/<reason>` and take another item.
+
+## Board vs logs — who is the source of truth
+The **board is the canonical human-facing view**; the **logs are the authority for
+automation**. Your `log/<you>.md` is an append-only event stream (`CLAIM`/`DONE`/`BLOCKED`
++ `#id`). The board is a projection the lead keeps in sync with those events. When the two
+disagree, the logs win and the lead reconciles the board — `scripts/team-sync.sh` reports
+exactly where they drift. So always emit the event in your log first; the board follows.
+
+## Handoffs — structured, one line, in your log
+Cross-domain asks must be parseable, not free prose. Use:
+`HH:MM · <you> · 🤝 HANDOFF → @<role> · #<id> · needs:<artifact> · <what & why>`
+- `→ @<role>` (required) — who picks it up · `#<id>` (required) — the board row it serves.
+- `needs:<…>` / `blocks:<id>` (optional) — required inputs / what it unblocks.
+`scripts/team-lint-log.sh` validates handoff lines; a malformed one fails the check.
+
+## Health, stale tasks, deadlock
+- `scripts/team-health.sh` reports each agent's liveness (heartbeat = your last log append),
+  flags **stale tasks** (a `doing` row whose owner has been silent past the timeout), and
+  signals **deadlock** (work remains but everything is `blocked`).
+- A **stale task** is reset by the **lead** to `todo`/`blocked` (timeout-and-requeue, never
+  delete); the owner must re-`CLAIM` before resuming. **Never** auto-reset a `done` item.
+- On a **deadlock** signal the lead breaks the jam (re-scope, unblock, or re-assign).
 
 ## Log format — `log/<you>.md`, append only, newest at bottom
 `HH:MM · <you> · <emoji> <message>` — one line per meaningful step

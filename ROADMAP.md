@@ -65,6 +65,32 @@ Aufwand: **S** = klein (Stunden–1 Tag) · **M** = mittel (Tage) · **L** = gro
 
 ---
 
+## Umsetzungsstand (dieser Branch)
+
+✅ **Bereits implementiert** (mit Tests, `bash tests/run.sh` — 22 grün):
+- **0.3** `scripts/lib/lock.sh` — gehärtetes Locking: atomares `mkdir`-Lock-Verzeichnis,
+  PID-Liveness (`kill -0`) statt mtime-Race, atomarer Stale-Break via `rename`,
+  Release nur bei eigener Ownership. `team-commit.sh`/`team-exclusive.sh` nutzen die Lib.
+- **0.1** `team-commit.sh --dry-run` (bzw. `TEAM_DRY_RUN=1`) — Gate + Vorschau ohne Commit.
+- **0.2** zentrales `.team/log/events.log` (Lock-/Commit-/Health-Events).
+- **0.4** `.gitignore` deckt Laufzeit-Artefakte ab (`locks/*`, `events.log`, `state/`, `backups/`).
+- **1.0** `team-sync.sh` — Board↔Log-Drift-Report (Logs = Autorität, Board = Projektion; meldet, schreibt nicht).
+- **1.1** Stale-Task-Erkennung in `team-health.sh` (`doing` + Owner zu lange still).
+- **1.2** `team-health.sh` — Liveness pro Rolle (Heartbeat = letzter Log-Append).
+- **1.4** Deadlock-Erkennung (alles `blocked`, nichts `doing`/`todo`).
+- **4.3** Handoff-Schema in `PROTOCOL.md` + `team-lint-log.sh`.
+- **Gate/Tests:** `team-check.sh` prüft jetzt `bash -n` + optional shellcheck + Test-Suite; `tests/run.sh` neu.
+
+⏭️ **Als Nächstes** (laut Priorisierung): 1.3 Auto-Resume · 2.2 Fallback-Lead · 2.3 Backup ·
+3.x Metriken/GUI · 2.1 Worktrees · 6.1 Memory.
+
+> Design-Grundlage: kurze Recherche zu (a) sicherer Bash-Concurrency [mkdir/flock, TOCTOU,
+> `kill -0`], (b) Blackboard/Event-Sourcing [Logs als Event-Stream, Board als Projektion;
+> Lease/TTL + timeout-and-requeue für Stale-Tasks], (c) offiziellen Claude-Code-Patterns
+> [Agent Teams, Worktrees, `SessionStart`-Hooks — der File-Layer ergänzt sie].
+
+---
+
 ## Phase 0 — Fundament & Quick Wins
 
 Kleine Härtungen an bestehenden Skripten. Niedriges Risiko, sofortiger Nutzen.

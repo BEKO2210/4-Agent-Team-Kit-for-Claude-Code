@@ -12,4 +12,24 @@ set -euo pipefail
 #   go vet ./... && go test ./...
 #   cargo clippy -- -D warnings && cargo test
 
-npm run lint && npm test
+# --- gate for THIS repo (the kit itself is a Bash project) ---
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/.." && pwd)"
+
+# 1) syntax-check every shell script (bash -n is always available)
+while IFS= read -r f; do
+  bash -n "$f"
+done < <(find "$ROOT/scripts" -name '*.sh' -type f)
+
+# 2) shellcheck if it is installed (optional, stronger)
+if command -v shellcheck >/dev/null 2>&1; then
+  # shellcheck disable=SC2046
+  shellcheck -x $(find "$ROOT/scripts" -name '*.sh' -type f)
+fi
+
+# 3) run the test suite
+if [ -x "$ROOT/tests/run.sh" ]; then
+  "$ROOT/tests/run.sh"
+fi
+
+echo "team-check: ✅ green"

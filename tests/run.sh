@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Self-contained test suite for the team coordination scripts.
+# Builds a throwaway git sandbox per test group, runs the real scripts against it,
+# and asserts behaviour. No external test framework needed (bats optional).
+#   tests/run.sh
+set -uo pipefail
+
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+pass=0; fail=0
+SANDBOXES=()
+
+ok() { printf '  \033[32mok\033[0m  %s\n' "$1"; pass=$((pass + 1)); }
+no() { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fail=$((fail + 1)); }
+assert() { if eval "$1"; then ok "$2"; else no "$2  [$1]"; fi; }
+
+cleanup() { for d in "${SANDBOXES[@]:-}"; do [ -n "$d" ] && rm -rf "$d"; done; }
+trap cleanup EXIT
+
+new_sandbox() {
+  SB="$(mktemp -d)"; SANDBOXES+=("$SB")
+  mkdir -p "$SB/scripts/lib" "$SB/.team/locks" "$SB/.team/log" "$SB/.team/roles"
+  cp "$SRC/scripts/lib/lock.sh" "$SB/scripts/lib/"
+  local s
+  for s in team-commit team-exclusive team-health team-sync team-lint-log; do
+    cp "$SRC/scripts/$s.sh" "$SB/scripts/"; chmod +x "$SB/scripts/$s.sh"
+  done
+  # a passing gate inside the sandbox (so team-commit's gate succeeds in isolation)
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$SB/scripts/team-check.sh"
+  chmod +x "$SB/scripts/team-check.sh"
+  : > "$SB/.team/locks/.gitkeep"
+  local r
+  for r in lead backend frontend quality; do
+    printf '# role %s\n' "$r" > "$SB/.team/roles/$r.md"
+    printf '# log %s\n' "$r" > "$SB/.team/log/$r.md"
+  done
+  cat > "$SB/.team/board.md" <<'EOF'
+| #  | Task | Owner    | Status | Notes |
+|----|------|----------|--------|-------|
+| 1  | a    | backend  | doing  | —     |
+| 2  | b    | frontend | todo   | —     |
+EOF
+  ( cd "$SB" && git init -q && git config user.email t@t && git config user.name t \
+      && git config commit.gpgsign false && git config tag.gpgsign false \
+      && git add -A && git commit -qm init )
+}
+
+run() { OUT="$(cd "$SB" && "$@" 2>&1)"; RC=$?; }
+
+echo "== lock / team-exclusive =="
+new_sandbox
+run scripts/team-exclusive.sh quality build -- bash -c 'echo hi'
+assert '[ "$RC" -eq 0 ]'                                'exclusive: success returns 0'
+assert 'printf "%s" "$OUT" | grep -q hi'               'exclusive: runs the command'
+run scripts/team-exclusive.sh quality build -- bash -c 'exit 7'
+assert '[ "$RC" -eq 7 ]'                                'exclusive: propagates exit code'
+assert 'grep -q "start build" "$SB/.team/log/events.log"' 'exclusive: writes events.log'
+assert '[ ! -e "$SB/.team/locks/build.lock" ]'         'exclusive: releases the lock'
+
+echo "== stale-lock break =="
+new_sandbox
+mkdir -p "$SB/.team/locks/build.lock"; echo 999999 > "$SB/.team/locks/build.lock/pid"
+run scripts/team-exclusive.sh quality build -- bash -c 'echo got'
+assert '[ "$RC" -eq 0 ]'                                'lock: breaks a dead-PID stale lock'
+assert 'printf "%s" "$OUT" | grep -q got'              'lock: proceeds after breaking'
+
+echo "== team-commit =="
+new_sandbox
+( cd "$SB" && echo hello > file.txt )
+run scripts/team-commit.sh backend "add file" file.txt
+assert '[ "$RC" -eq 0 ]'                                'commit: returns 0'
+assert '( cd "$SB" && git log -1 --pretty=%s | grep -q "\[backend\] add file" )' 'commit: [role] prefix'
+( cd "$SB" && echo more >> file.txt )
+run scripts/team-commit.sh --dry-run backend "do not commit" file.txt
+assert '[ "$RC" -eq 0 ]'                                'dry-run: returns 0'
+assert '! ( cd "$SB" && git log -1 --pretty=%s | grep -q "do not commit" )' 'dry-run: makes no commit'
+assert '( cd "$SB" && git diff --cached --quiet )'     'dry-run: leaves nothing staged'
+
+echo "== team-health =="
+new_sandbox
+touch -t 200001010000 "$SB/.team/log/backend.md"   # backend silent since year 2000
+run scripts/team-health.sh
+assert 'printf "%s" "$OUT" | grep -q "backend" '       'health: lists backend'
+assert 'printf "%s\n" "$OUT" | grep -E "backend .*stale" >/dev/null' 'health: marks backend stale'
+assert 'printf "%s" "$OUT" | grep -q "#1"'             'health: flags stale doing-task #1'
+
+echo "== team-health deadlock =="
+new_sandbox
+cat > "$SB/.team/board.md" <<'EOF'
+| #  | Task | Owner    | Status  | Notes |
+|----|------|----------|---------|-------|
+| 1  | a    | backend  | blocked | —     |
+EOF
+run scripts/team-health.sh
+assert 'printf "%s" "$OUT" | grep -qi "Deadlock: ⚠"'   'health: detects all-blocked deadlock'
+
+echo "== team-sync =="
+new_sandbox
+printf '12:00 · backend · ✅ DONE #1 — proof\n' >> "$SB/.team/log/backend.md"
+run scripts/team-sync.sh
+assert 'printf "%s" "$OUT" | grep -q "#1"'             'sync: detects drift on #1'
+assert 'printf "%s" "$OUT" | grep -qi "drift"'         'sync: labels it drift'
+run scripts/team-sync.sh --strict
+assert '[ "$RC" -eq 1 ]'                                'sync: --strict exits 1 on drift'
+# no drift once the board agrees
+new_sandbox
+printf '12:00 · backend · 🛠 CLAIM #1 — start\n' >> "$SB/.team/log/backend.md"
+run scripts/team-sync.sh --strict
+assert '[ "$RC" -eq 0 ]'                                'sync: --strict exits 0 when aligned'
+
+echo "== team-lint-log =="
+new_sandbox
+printf '12:00 · backend · 🤝 HANDOFF → @frontend · #2 · needs:api · do x\n' >> "$SB/.team/log/backend.md"
+run scripts/team-lint-log.sh .team/log/backend.md
+assert '[ "$RC" -eq 0 ]'                                'lint: well-formed handoff passes'
+printf '12:01 · backend · 🤝 HANDOFF frontend do y\n' >> "$SB/.team/log/backend.md"
+run scripts/team-lint-log.sh .team/log/backend.md
+assert '[ "$RC" -ne 0 ]'                                'lint: malformed handoff fails'
+
+echo
+echo "tests: $pass passed, $fail failed"
+[ "$fail" -eq 0 ]
