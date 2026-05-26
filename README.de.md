@@ -57,7 +57,7 @@ und die Agenten bleiben in ihrer Spur, serialisieren ihre Commits, committen nie
 
 **Für wen es gedacht ist**
 
-- Entwicklerinnen, die ein kleines Team aus Claude-Code-Agenten an echtem Code arbeiten lassen wollen.
+- Entwickler, die ein kleines Team aus Claude-Code-Agenten an echtem Code arbeiten lassen wollen.
 - Alle, die Multi-Agent-Koordination ohne Framework-Lock-in verstehen wollen.
 - Teams, die mit **null externer Infrastruktur** auskommen müssen.
 
