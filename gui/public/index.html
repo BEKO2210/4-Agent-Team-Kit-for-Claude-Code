@@ -68,25 +68,29 @@
   @keyframes ring { 0%{box-shadow:0 0 0 0 rgba(84,230,168,.5);} 70%{box-shadow:0 0 0 7px rgba(84,230,168,0);} 100%{box-shadow:0 0 0 0 rgba(84,230,168,0);} }
 
   /* ---------- vitals strip ---------- */
-  .vitals { display:flex; align-items:center; gap:20px; padding:11px 18px;
+  .vitals { display:flex; align-items:flex-start; gap:20px; padding:11px 18px;
             border-bottom:1px solid var(--border); background:rgba(10,14,22,.5); flex-wrap:wrap; }
-  .pwrap { flex:1 1 260px; min-width:220px; }
-  .ptrack { height:11px; border-radius:7px; display:flex; gap:3px; background:transparent; }
-  .rseg { flex:1; position:relative; height:100%; border-radius:6px; overflow:hidden;
-          background:color-mix(in srgb, var(--accent) 12%, #0a0f1a);
-          border:1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-          box-shadow:inset 0 1px 0 rgba(255,255,255,.02); }
+  .pwrap { flex:1 1 320px; min-width:260px; display:flex; flex-direction:column; gap:5px; }
+  .rolebars { display:flex; flex-direction:column; gap:6px; }
+  .rbar { display:grid; grid-template-columns:78px 1fr auto; align-items:center; gap:10px; }
+  .rname { font:700 11px var(--mono); letter-spacing:.7px; text-transform:uppercase;
+           color:var(--accent);
+           text-shadow:0 0 8px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .rtrack { height:9px; border-radius:6px; overflow:hidden; position:relative;
+            background:color-mix(in srgb, var(--accent) 12%, #0a0f1a);
+            border:1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.02); }
   .rfill { position:absolute; inset:0 auto 0 0; height:100%; width:0%;
            background:linear-gradient(90deg,
-             color-mix(in srgb, var(--accent) 70%, transparent),
+             color-mix(in srgb, var(--accent) 65%, transparent),
              var(--accent));
            box-shadow:0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
-           transition:width .5s cubic-bezier(.4,0,.2,1); }
-  .rlabel { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-            font:700 9px var(--mono); letter-spacing:.6px; text-transform:uppercase;
-            color:rgba(255,255,255,.78); text-shadow:0 1px 1px rgba(0,0,0,.6);
-            pointer-events:none; mix-blend-mode:screen; }
-  .pmeta { margin-top:6px; font:600 12px var(--mono); color:var(--muted); }
+           transition:width .55s cubic-bezier(.4,0,.2,1); }
+  .rcount { font:700 12px var(--mono); color:var(--fg); white-space:nowrap;
+            min-width:54px; text-align:right; }
+  .rcount em { font-style:normal; color:var(--muted); font-weight:600; margin-left:4px; font-size:11px; }
+  .rcount.empty { color:var(--dim); }
+  .pmeta { font:600 12px var(--mono); color:var(--muted); margin-top:2px; }
   .pmeta b { color:var(--fg); }
   .avitals { display:flex; gap:9px; flex-wrap:wrap; }
   .vchip { display:flex; align-items:center; gap:7px; padding:6px 11px 6px 9px; border-radius:999px;
@@ -190,7 +194,7 @@
 
   <section class="vitals">
     <div class="pwrap">
-      <div class="ptrack" id="ptrack"></div>
+      <div class="rolebars" id="rolebars"></div>
       <div class="pmeta" id="pmeta">board — waiting for .team/board.md…</div>
     </div>
     <div class="avitals" id="avitals"></div>
@@ -235,9 +239,10 @@
     }
     const clearAttention = (id) => setAttention(id, false);
 
-    function sendPrompt(id) {
+    function sendPrompt(id, goalOverride) {
       const a = cfg.agents.find((x) => x.id === id); if (!a) return;
-      const goal = document.getElementById("goal").value || "<<< describe the goal >>>";
+      const goal = (goalOverride !== undefined ? goalOverride : document.getElementById("goal").value)
+                   || "<<< describe the goal >>>";
       paste(id, flatten((a.prompt || "").replace("{{GOAL}}", goal)));
       input(id, "\r");
     }
@@ -326,7 +331,12 @@
       });
 
       document.getElementById("kickoff").addEventListener("click", () => {
-        cfg.agents.forEach((a, i) => setTimeout(() => sendPrompt(a.id), i * 700));
+        // Snapshot the goal once so every agent gets the same text, then clear the
+        // textarea immediately so the user sees the dispatch was accepted.
+        const goalEl = document.getElementById("goal");
+        const goal = goalEl.value;
+        cfg.agents.forEach((a, i) => setTimeout(() => sendPrompt(a.id, goal), i * 700));
+        goalEl.value = "";
       });
       document.getElementById("statusAll").addEventListener("click", () => {
         for (const a of cfg.agents) input(a.id, "state\r");
@@ -353,14 +363,18 @@
         if (t.state === "done") per[t.owner].done++;
       }
 
-      const ptrack = document.getElementById("ptrack");
-      ptrack.innerHTML = roleOrder.map((id) => {
+      const rolebars = document.getElementById("rolebars");
+      rolebars.innerHTML = roleOrder.map((id) => {
         const p = per[id], pct = p.total ? Math.round(100 * p.done / p.total) : 0;
         const accent = accentFor(id);
-        const tip = `${id}: ${p.done}/${p.total} done`;
-        return `<div class="rseg" style="--accent:${accent}" title="${tip}" data-role="${id}">
-                  <div class="rfill" style="width:${pct}%"></div>
-                  <div class="rlabel">${id}${p.total ? ` ${p.done}/${p.total}` : ""}</div>
+        const empty = p.total ? "" : " empty";
+        const countLabel = p.total
+          ? `${p.done}<em>/ ${p.total}</em>`
+          : `<em>idle</em>`;
+        return `<div class="rbar" style="--accent:${accent}" data-role="${id}" title="${id}: ${p.done}/${p.total} done (${pct}%)">
+                  <span class="rname">${id}</span>
+                  <div class="rtrack"><div class="rfill" style="width:${pct}%"></div></div>
+                  <span class="rcount${empty}">${countLabel}</span>
                 </div>`;
       }).join("");
 
