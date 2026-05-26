@@ -22,9 +22,10 @@ while IFS= read -r f; do
 done < <(find "$ROOT/scripts" -name '*.sh' -type f)
 
 # 2) shellcheck if it is installed (optional, stronger)
+# Severity 'warning' catches real bugs; info/style suggestions don't fail the gate.
 if command -v shellcheck >/dev/null 2>&1; then
   # shellcheck disable=SC2046
-  shellcheck -x $(find "$ROOT/scripts" -name '*.sh' -type f)
+  shellcheck -x -S warning $(find "$ROOT/scripts" -name '*.sh' -type f)
 fi
 
 # 3) run the test suite

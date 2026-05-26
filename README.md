@@ -9,10 +9,10 @@ no database, no message broker, no framework. Coordination lives entirely in a `
 folder of Markdown and a handful of POSIX shell scripts.
 
 <p>
+  <a href="https://github.com/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/actions/workflows/gate.yml"><img alt="Gate workflow status" src="https://img.shields.io/github/actions/workflow/status/BEKO2210/4-Agent-Team-Kit-for-Claude-Code/gate.yml?label=gate"></a>
   <a href="LICENSE"><img alt="License: Private Use" src="https://img.shields.io/badge/license-Private%20Use-e8a33d"></a>
   <img alt="Built for Claude Code" src="https://img.shields.io/badge/built%20for-Claude%20Code-5b8cff">
   <img alt="Core dependencies: zero" src="https://img.shields.io/badge/core%20deps-0-2ea043">
-  <a href="tests/run.sh"><img alt="Tests: passing" src="https://img.shields.io/badge/tests-45%20checks-2ea043"></a>
   <img alt="GUI: Node.js" src="https://img.shields.io/badge/GUI-Node.js-3c873a">
 </p>
 
@@ -78,7 +78,7 @@ lanes, serialize their commits, and never ship red.
 | 🛟 | **Resilience** | Fallback-lead (`team-lead-claim.sh`) and `.team/` snapshots (`team-backup.sh`) so a stalled lead or a bad push isn't fatal. |
 | 🌿 | **Stronger isolation (optional)** | `team-worktrees.sh` gives each agent its own Git worktree + branch; the lead integrates by merge. |
 | 🖥️ | **Optional live console** | A tiny local web UI (`gui/`) runs all four sessions in one window with a live vitals strip. |
-| 🧪 | **Tested** | A self-contained Bash test suite (`tests/run.sh`, 45 checks) — no test framework required. |
+| 🧪 | **Tested in CI** | A self-contained Bash test suite (`tests/run.sh`, currently 58 checks) runs on every push via [`.github/workflows/gate.yml`](.github/workflows/gate.yml) — no test framework required. |
 
 ## Preview
 
@@ -115,7 +115,7 @@ $EDITOR .team/roles/*.md          # point each lane's globs at YOUR repo
 **3. Verify the scripts work**
 
 ```bash
-bash tests/run.sh                 # 45 checks; all should pass
+bash tests/run.sh                 # the script test suite (58 checks at last count); all should pass
 scripts/team-health.sh            # prints a team-health report
 ```
 
@@ -151,6 +151,8 @@ scripts/team-backup.sh [restore [file]] # snapshot / restore .team/ (git isn't t
 scripts/team-lead-claim.sh <role>       # fallback-lead: record the acting lead
 scripts/team-lint-log.sh                # validate structured @role handoff lines
 scripts/team-worktrees.sh setup         # per-role git worktrees for stronger isolation
+scripts/team-role.sh add <name> <globs> # add a runtime role + emit its start prompt
+scripts/team-handoff.sh                 # produce a briefing for a fresh session
 scripts/team-commit.sh --dry-run <role> "msg" <paths>   # run the gate + preview, don't commit
 ```
 
@@ -236,9 +238,12 @@ flowchart TB
 │  ├─ team-backup.sh      # snapshot / restore .team/
 │  ├─ team-lead-claim.sh  # fallback-lead
 │  ├─ team-lint-log.sh    # validate @role handoff lines
-│  └─ team-worktrees.sh   # per-role git worktrees
+│  ├─ team-worktrees.sh   # per-role git worktrees
+│  ├─ team-role.sh        # add / list / remove team roles at runtime
+│  └─ team-handoff.sh     # produce a briefing for a fresh Claude Code session
 ├─ gui/                   # optional one-window web console (Node.js)
-├─ tests/run.sh           # 45-check Bash test suite
+├─ .github/workflows/     # GitHub Actions (gate workflow runs the suite on every push)
+├─ tests/run.sh           # Bash test suite (58 checks at last count)
 ├─ docs/console.png       # GUI screenshot
 ├─ PROMPTS.md             # the 4 copy-paste terminal prompts
 ├─ ROADMAP.md             # phased plan + implementation status
@@ -247,20 +252,21 @@ flowchart TB
 
 ## Quality and security
 
-- **Tests** — `bash tests/run.sh` runs 45 sandboxed checks against the real scripts; no
+- **Continuous integration** — every push runs [`.github/workflows/gate.yml`](.github/workflows/gate.yml),
+  which executes the full green gate (`bash -n` + `shellcheck` + the test suite) on Ubuntu.
+- **Tests** — `bash tests/run.sh` runs 58 sandboxed checks against the real scripts; no
   external test framework is required.
 - **Green gate** — [`scripts/team-check.sh`](scripts/team-check.sh) syntax-checks every
-  script (`bash -n`), runs `shellcheck` when available, and runs the test suite.
+  script (`bash -n`), runs `shellcheck -S warning` when available, and runs the test suite.
 - **Concurrency safety** — locks use an atomic `mkdir` directory with PID-liveness stale
   detection and an atomic, rename-based break, so two agents can't both acquire one lock.
 - **Privacy** — everything is local and file-based: the coordination state lives in your
   own repo, and runtime artifacts (`events.log`, `locks/`, `state/`, `backups/`, `metrics.md`)
   are gitignored.
 
-> [!WARNING]
-> Continuous integration is **planned, not present** (Roadmap 5.1). There is no GitHub
-> Actions workflow yet, so this README intentionally carries no CI status badge. There is
-> currently no `SECURITY.md` either — please report concerns privately to the maintainer.
+> [!NOTE]
+> There is no `SECURITY.md` yet — please report concerns privately to the maintainer
+> (see [LICENSE](LICENSE) for contact context).
 
 ## Roadmap
 
@@ -276,13 +282,14 @@ Shipped in this repo:
 - [x] Structured handoff schema + linter (`team-lint-log.sh`)
 - [x] Git worktrees for stronger isolation (`team-worktrees.sh`)
 - [x] Live web console with vitals (`gui/`, `/status`)
+- [x] Dynamic / additional roles at runtime (`team-role.sh`)
+- [x] Cross-session handoff briefing (`team-handoff.sh`)
+- [x] GitHub Actions CI + live badge (`.github/workflows/gate.yml`)
 
 Planned:
 
-- [ ] Dynamic / additional roles at runtime (4.1)
-- [ ] GitHub Actions CI + status badge (5.1)
 - [ ] Optional MCP server exposing coordination state (5.3)
-- [ ] Cross-session handoff briefing (6.2)
+- [ ] Sub-teams / hierarchies (4.2)
 
 See [`ROADMAP.md`](ROADMAP.md) for the full phased plan, priorities, and rationale.
 
